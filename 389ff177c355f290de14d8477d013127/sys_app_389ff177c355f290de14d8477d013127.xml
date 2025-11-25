@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_app">
+    <sys_app action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <can_edit_in_studio>true</can_edit_in_studio>
+        <enforce_license>log</enforce_license>
+        <guided_setup_guid/>
+        <hide_on_ui>false</hide_on_ui>
+        <ide_created>FORM</ide_created>
+        <installed_as_dependency>false</installed_as_dependency>
+        <js_level>es_latest</js_level>
+        <licensable>true</licensable>
+        <license/>
+        <license_category>none</license_category>
+        <license_definition/>
+        <license_model>none</license_model>
+        <logo>96504e7bc355f290de14d8477d013140</logo>
+        <menu display_value="Intrux Code Search">e7d2c6f3c395f290de14d8477d013122</menu>
+        <name>Intrux Code Search</name>
+        <package_json/>
+        <private>false</private>
+        <restrict_table_access>false</restrict_table_access>
+        <runtime_access_tracking>permissive</runtime_access_tracking>
+        <scope>x_itx_codesearch</scope>
+        <scoped_administration>false</scoped_administration>
+        <short_description>Enables Code Search on all configuration / application file / sys_metadata records which are not yet covered by the OOTB code search configuration.&#13;
+Search can be configured using this application's properties.&#13;
+&#13;
+Author: Markus Kraus (markus.kraus@intrux.ch)&#13;
+Website: https://intrux.swiss</short_description>
+        <source>x_itx_codesearch</source>
+        <store_correlation_id/>
+        <store_url/>
+        <subscription_entitlement/>
+        <sys_class_name>sys_app</sys_class_name>
+        <sys_code/>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-25 21:14:38</sys_created_on>
+        <sys_id>389ff177c355f290de14d8477d013127</sys_id>
+        <sys_mod_count>5</sys_mod_count>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-25 21:28:50</sys_updated_on>
+        <template/>
+        <trackable>true</trackable>
+        <uninstall_blocked>false</uninstall_blocked>
+        <user_role display_value="admin" name="admin">2831a114c611228501d4ea6c309d626d</user_role>
+        <vendor/>
+        <vendor_prefix/>
+        <version>1.0.0</version>
+    </sys_app>
+    <sys_translated_text action="delete_multiple" query="documentkey=389ff177c355f290de14d8477d013127"/>
+    <sys_attachment action="INSERT_OR_UPDATE">
+        <average_image_color>#ac60c1</average_image_color>
+        <chunk_size_bytes>700000</chunk_size_bytes>
+        <compressed>true</compressed>
+        <content_type>image/png</content_type>
+        <encryption_context/>
+        <file_name>logo</file_name>
+        <hash>1eddf517beb0f6a4489e59f28cede495e4a7cf794998f36236bb347f7a7f749c</hash>
+        <image_height>64</image_height>
+        <image_width>64</image_width>
+        <size_bytes>7104</size_bytes>
+        <size_compressed>4596</size_compressed>
+        <state>available</state>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-25 21:17:37</sys_created_on>
+        <sys_id>96504e7bc355f290de14d8477d013140</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-25 21:17:37</sys_updated_on>
+        <table_name>ZZ_YYsys_app</table_name>
+        <table_sys_id>389ff177c355f290de14d8477d013127</table_sys_id>
+    </sys_attachment>
+    <sys_attachment_doc action="INSERT_OR_UPDATE">
+        <data>H4sIAAAAAAAA/w==</data>
+        <length>16</length>
+        <position>0</position>
+        <sys_attachment display_value="logo" sys_id="96504e7bc355f290de14d8477d013140">96504e7bc355f290de14d8477d013140</sys_attachment>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-25 21:17:37</sys_created_on>
+        <sys_id>d6504e7bc355f290de14d8477d013140</sys_id>
+    </sys_attachment_doc>
+    <sys_attachment_doc action="INSERT_OR_UPDATE">
+        <data>7Vd7OJRb23+GxmGiUkh0GBMSxowxY8zkOMihhnGMJMYYTJiZZgaDyFnYOxXtDk6plFMOO1LYDjmWHHaE1I5skijnCOV7aL971/e91/v99V3X90fPdT2Hte7f87vv+7futa614imWpuIwWRgAAOLmZsY24Ntg7RYRAp95jJOvwFdTsJ0jz4YaCGdzWJ4MXzqcF8Smw+l8hicA8Pv9KNab6uEinxckD0QK2Oicdan0wPdNL0j2l7ai9SJMd5v1608eCRa7gTB/595vp3n4KvYdW61yPl6xtYGxVXLIWS99g3wj/7lRV47+zIjk1O36/O3yIUIlr+Kld7WERV+XSIoXaZcmIaMvpynLd352dkpF9qIKQqpTP5EFC9qcYi9z9UvU+l45/B4XH6CeFvHkHU6HSX75+m1DwsPILkOR4hkNUekZllVcNuqDkhPaYccoEwAg0QwjI4q5kdG/MgLzSAs9r2tWb7Cz0dXWx15lU8CWky0Ul9LEBO0eFcksUo7UUX/0g7mNV7EK+9XPRvrU1SU15kUl3i3cVBgJX4QMqWvvrzCLXz0EQ7rran9orgxJqgwMp6A0294lQK4yU3ONjz3xONI4qFohYYAS0lDXbL2cfFOBeLYoZHExePuIU3rHZ8LSs7RGINNsJy2WsY21pcO3X2g0dAit+lhlmjAdbb5dIWy4YmhabjSyVaBDLHWsW+fkZUe10pKnTQXeJxq6GiTsu/a7tvALOK+GCi7mFwRZfXlIsXR1ekNsk1AoPqNotiXrWsLWx8US2fb7GkkJH//ctVJf6Iq4RCrcKkOQpkQIPZ+PWq2bZN5Z6b55STJBMGJ78ycZaGSlwY032gPNZ7u0ISsdtRdfzRx5Vzuxb6zsF2mCgNC9iMTxX25NQC4dqO1Mlk/9VfUTA/ZJZyrs4EAKVIgVUY0rKn+jZ7knHOt/sQqyaVNEiQC9KJAfaBXCWs1gfFwQ9O3m3GyOl10AKy+YAVaYI/kwkcbyU6d6sNzp6nw/NrB26ejz2VSaD50Hd6d7MZi6iMnKGgSc4aGLOIIjo8lsI7o3wyyYQ7cNtrSjBfvQCB4IfT2YDp8IEvjReVQ438+XySXydRHrvETwe60bhYCvQ3g+ughHMgVuxOLQ4Vh1rDoaacJnBGAQejC4DsfDk2hjfPAvCrCli/Dm8dhEFCowMFA9UFOdxfFCaRAIBBQag8JgkCACyQ1i8qh8JJO7d43iK4cxnUvjMNg8BosJX2tT3Vn+PF0EArTD/xWfH5tM/pueyf1LBVAPFJ/KRmmoo1F+fqhv/+DyTAJ4//kPrh04UVE2dC7Ln0OjmwTQmby931KYmpMp36XkxfBjrycFhvOdMw/a3zi2P8d3HeNBQ9F96X4gKRf0pvEdnsfw9Pz3sa1Z1oP7b9n/50zWwesaEY1ZNP81p+bGuoi1eIkeLBrDg7j+icOgcVqemnQk1R3vjsRqEbBIAhpPR3poYKka7toemnSc+zdU5kwuj8qk0deowB51Bsij5YnWxnnSsUiMpgYBicVr4JHa7tpoJEYDT9fCoOmaaLTmNxRWHAZYlVTfb6Nao/IAqfAYOhrnQcUjse6amuADT0W6o3F4pAYNS8BTMTgalf41mrVxIBpSzHURGHX0Pz0UXyrPk8Xx00WQqTS4le0/FjuGH92WR11TTQOPJWho4LAELbQ2AY3F/gNyoHO4YMWtkWqg1TW11i0eNOJBkJIKVg7Dj+pFR7GZXuuGtXFZywbMgcpb/03jX2kSjTh0Ko/FsWOxfHURa9zwNcq/zWRwPnlQeVRjKo8OekNjcES0FhGNs9PQIGKwRBxWFY0hor/BszwYnkH/G3pt9sB1vqpsxuCC/oPWu75OKVv6ya+tr01fxtcGfH1WEKm0rylwqQF0D8R3Jpo3lelFB5cP1Pf9jH9XC1gsWpuqSUVq4mjgKGpSwQH09ESDNaWN16Zi8e4Equf3LFyWJy+QyqEbeoE6glqBRbmuFVz56xDu/x4e6E1nftUAidZC/qOB1l8aoP7KGPVtyjqo/yHKV8A3y8za6oX6a/kCV0PU38vhX6L9H18/nPxw8sPJDyc/nPxw8sPJ/ysnsH8OVHQmuA0KBI9LyMWutcOWkPshU+P1QxfwyajyNPgSZZs5cQFg49a1G/L0j7AVsFOYZ042ER4TgorKaA8++oIGbeCuydCO3//emcG2s5f+Uj1L7JR4LiabEpH1stOhtEEiUkCWd+xWU7ZdEzR365EGKTEFiDssohgq5fnSny2Eb/LzOMY2N926RXjnjn3XbwzFRgmI/qp8bi5kIePT739kdf1hHij5q2NG3pFQ1+NL1SHVs+mz7bqT2KnE0gy7kQ/vluqmXFycueK+Y3KFu++5bKg63HIqa26fqHyeSPutqdza1LDlu9DB98k1cm9EDsXoxMOjI9HA66jhEwJBzRs0VcMcgCqc9+xrUvvWmevFv4om9CbFbKgbNZPe8HhlvB8HFGUukgMlLCVmDsofuCBguNeiN0kx+Ljp4PELXYL0L3few8IvWToOGNaOx6hJYxIlsoekWCKknaoU/Vckjkq4MIihpAoPxvxZre3a8pz00cfNegtCXDIxHG5+5VwDUk/pyh7l2Zo+JYjjzkVe+Lls0ptbM7MyFad3EiYvNcycXz3kZkUIrzK4svqbFqT2etie+a2cinM3zIgX3raKJoiO7JJ4k16yNCgFUM7bhsIibC4QfIeXTwI7LiQCh0VTPuFLYUDSbocy/Uc6cU/2Pt8vlb33z6KdFlmLi3PP809nl8wi5aqu2B23YCs9cj2UPJEr7LUvwgbIjsCsbkYK1IbGVY+eeZxz5lkIzvCZY/57trHnhbTTX5ZDA/G40yaW/koRzobSsOeKD3wUwqsgtZJbEgVYS216gm6Gk4FxG51UHm77qGZxNbggiBRk3DIk4bN54GVaiP2w3R5jtkq8T/QcThTzcFSh13jIiF0kQAluOfA5Om3vcFCJNGvFyVJkxF5+308rk9Y+pxOSHN7Y7RHkFIaPYi8eaDguWLyhtgGU5M/MDQbmH2fUIIkm2rEeTbuJWpaBWXaiBOpcBc31RWpS/uO0q3fNnig+19dQVsLFbhyEALbgeCDbhNxOJNHxIgSjlg+PTqEeieNFs82iNxYtT/BZrgqOF6PyQwHTbWlKxgGy+3FmTCiaQHlTo+8HJGwSkYY5XUjxjM+dYGa9RA4XpPZkLoYemkCqCPfylCgGnJ11TyT3+3cjlaCPVzRtBSh973/2jXSFjVmd78yhZEhyni6KR/WUNx2v5rDJmVO0bZdEH4F4ZHg1WIn4xvbXiZndjrrknLAYA4iyWk405hR65cFORLnVipaXvY+0ZmzhRMnu2paRKJ83zm4ZKrHKyOiT49Csa5mDDEC6uV1+OvlomVPTUUcfKiLOfuM2vXuOzyTeRlOhclYM+xEaveXx7vzuOKqDf7R1ZaP3k/7xeYpMmdP0APkhIGfYRjLI0Speycl15rqakF+oFonnttgAHQ6bCp/n5hWZ/Tai6E7feGJoQVYYfpYkUDExqOY3G3PwnQ2t295CSFTZT9BlSLEO+lNTp5JFaD7aoe2ntts+zr2n374QzrPGHZS7r36deV5aELtV9xlMIcG9tdfqdKmxf2dL8rX9QgrA4Di0Qk6yW3cu3vLp8Ya8nw9+yVkmlent8e6HLrk+q2swCTMe686Q2bIsqelAtadeeHsOqO1sPdCVQMaYHxC49spbNt41JNxMtLYuLmC4dmvNz2VV1jHWfqZifTf4Osm2AgBw2/X3n3dAFBS2vd8v1GC62uSYJhnOFKaz52yFTzT9fsaxJv2Bwd4rBeRLEKBz+e3hs07Bxbud+gxvJJeWy3TCRQ4eQ/gBwDXnDrHjfFMt04J3WU57d73IkDn3ZLULFgnca2RdDlkYSNo+0NvlOl2f4EQfKHrbry7j5hflJtPmaytwrfaqR3KCkbVJtfXn4ez3rc0roT7ZRW1ChvnzJa1NtxrG7tdCdi6eFyD/5k8wk1qQGxyw8svVvh2qQHo9Wxp1TUUJ8O4flWpWnnr88B29SPd+kNPqvSsi2a/EFIHiP+uXF1oDhKBS93UnJPaPHIb2qPUt9hhlD/ziVZ4Nvx8nKos8c7MxvB64lsTq1IUdA9VOCbTThh3zkcpsX6k4ZfPoyMhyWbpxzpVctN3puzfevVIH2MZxaYoHT6aQEoGbttPvxdxiVfSu3is8NZyemXJovDG8gaf9h8y5XIfm7slNn6MCxVt0gipidosOSgBK4gfnIFP3jxaoHXfWKx2hhSvdrG2ziKHOn32/WjXa16ef/nIs5efbAXojR6FCwNLBqz47cgwaUxZaM9NXjn+i3rki8vyNbyzAs/FxHfjYk2Y4vb39HWZYfzRALvgWNKyoNo5ROIaA9kgXqGTiT9KLQxIbwjeM4/Wl9GQcVMurMbS6QNRhsvK+JG23t60OJ6sEaBC72yWFZ4Emo+mx9xfrUptRGz0nNo7cXsi7WdJj/rL9xZtJKOABBGsWuJSPxD8q71VTeysTctIuifrKXjgjuCZmd1btTqCMUaCxsVagLKdivm0wKOSPJfmQe9apEqmwyf0zJ+5Ccga2Q5RjSnzyJ3edPtm2pxmvXPhzm57fsp+uVesRE+A1HjU2vPkzUMWffeo21XQpSjAsb8gkNFKNCOeXlARY+4qq/SKqRRbyZQzpxRnO75gvvR786n7E9PbZkJEw674DCzbQWIMSTFvZKKnkxJPEuphe/T0T87SUjsmZJQNWXG5xXofMs4KGctJ8ataGP7Y+vnlA7z7K2WU2u6cibCIgq0ydV77xzjwiU31Q4EQOmg/7JUZYqv0Qn0B8n1zuXfClLvgyXXzpqKDj5uKMh8bN563uelXZiltQKUtT9Hrbjys/jc9Z7LmguCmIYH7rrUOulMWAeWqs7wlwW9D3pQgaIztjYQNsaRcRC6yfYpalXXTRwcs7qeSpLOQ3InvqFXw6cVCAIlhbL4S7TIoy2exK0JGflBl3fepUK2CqfdbjFuXC3B4lLNVSpZCAmx+fXrpemxCE976DF/RnLkgCwO6s2FQ3pw1RMc8VuVtlFWADSH2K+C3ZG71HBV1hwLXX07Iyw7rBbVNw4FjXdFCm41lpztVzuXIKD3/qUxkeZgyIW9UYIlScBy5fzJYvkin7IHNnHgPGu1vOIfd1dAbXU9Hv/JWpALSb7pMyoZpDguFTfW7xhf3z2FUbZ2WPVSEXd+/Szz1SjwURaUTuC1bqAKILrqLHNdXvDuKW9hxAiQPX/zzy+iSp45OieerNJmiU19GoBz2D91MAfngF0PPsaFVF6gzh8sOZQ9Fp/N7NoyulSrn83CDvh+w7sxavX0eDuOjgue6Lpt3JQ8c3D1zpVApsHTc0FT8oF8XoueaVDBg3l1FO3Xd+cP3sTPavx8fEIJvP49rxLctdhdwFZuqxAruOmraIEWVcGiTKyAYA/KGynADHI555zZ9CM6r2ZllzJvQj0+8YVuNkbgst40TD5bsFB0kl9UDls1q3GxdsS5NnF68THiwXWmMctDp21eiLzbqdF05KB6nGYVgF11zVmBPpt5erKefOqbks+BaXy6bUDnLm4WSBLV9eWM5TYIlPTbq4zrfstSBndgT95oY2Ei8Kz0oWALzN3FxGd/krTnZmbzuikDrbvy9yX27dMZx2mQQgJiadW5dSIz1yz/Iur8pXJQMNxGajn5DX1L9Ys6Njv/av7i+3P3pTtdRRp+nGjg/WthbHvKamyqrH1dGSyE9cKvE9v/W6LrFUWvRdxb3qi11VgALVKZKli/Kw82CF5aN4nyamz9jQI72x4L7LRzohv/TmN7v7K6pCgZz8WXnJmWfRpHaXrHN3tRfu5usLhze6ZEw/kCe8nE0rKppT73vOBM48LseTPxRmSOaq0u6o7rIFwinpm/3lhbOIA/cqztnugn3K4Lp4tY9UqjNd9a8mXFp1sT91vwLj7PIAjQRI7bOF4636gV0tHz/ffcB3Ov1ojtpDz61oNzeHiBDyjeT3oUC/zhNxycij9z7c5VtA7TjX7gsY2P8klSfyG+lUC8N8xNmlZ6R9fGm6s7JyaDtD95N+bMRAz05Bb5m1Dbq5iaVxIckt8r8AyVUlRMAbAAA=</data>
+        <length>6116</length>
+        <position>1</position>
+        <sys_attachment display_value="logo" sys_id="96504e7bc355f290de14d8477d013140">96504e7bc355f290de14d8477d013140</sys_attachment>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-25 21:17:37</sys_created_on>
+        <sys_id>9a504e7bc355f290de14d8477d013140</sys_id>
+    </sys_attachment_doc>
+</record_update>

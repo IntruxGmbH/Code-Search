@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="7660ce7bc355f290de14d8477d01313e" label="Configuration" max_length="40" name="x_itx_codesearch_st_configuration" type="collection">
+        <element label="Data" max_length="16777215" name="data" type="string"/>
+        <element label="Class" max_length="80" name="sys_class_name" type="table_name"/>
+        <element attributes="readonly_clickthrough=true" label="Record" max_length="32" name="record" reference="sys_metadata" type="reference"/>
+        <index name="index">
+            <element name="record"/>
+        </index>
+    </element>
+</database>
