@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_scoped_cache">
+    <sys_scoped_cache action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <always_compress>false</always_compress>
+        <cache_name>codesearch_lookup</cache_name>
+        <cache_name_with_scope>codesearch_lookup.x_itx_codesearch</cache_name_with_scope>
+        <max_entries>1000</max_entries>
+        <sys_class_name>sys_scoped_cache</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-30 19:29:57</sys_created_on>
+        <sys_id>85a75b15c3e1f6d0de14d8477d01312c</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>codesearch_lookup</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_scoped_cache_85a75b15c3e1f6d0de14d8477d01312c</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-30 19:29:57</sys_updated_on>
+    </sys_scoped_cache>
+</record_update>

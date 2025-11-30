@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_client_extension_point">
+    <sys_client_extension_point action="INSERT_OR_UPDATE">
+        <api_name>x_itx_codesearch.classic_studio_fix</api_name>
+        <description>Workaround for Classic Studio (/$studio.do) code which will only display code search hits for a hard-coded set of tables:&#13;
+- Create Implementation for UI Script in Global scope (use "Create implementation" below)&#13;
+- Set the "global" flag of the implementation to true&#13;
+- Should be be probably done only on your development instance&#13;
+- To run the fix, any list or record must be opened, afterwards the code search properly shows all found records</description>
+        <example><![CDATA[setTimeout(function () {
+	var parent = this.top;
+	if (!parent || parent.location.pathname != '/$studio.do') return;
+
+	if (parent.x_itx_codesearch_fixed) return;
+
+	var injector = top.angular.element(top.document).injector();
+	injector.get('searchEndpoint').getTableOptions().then(function () {
+		var dynamicSearchTables = injector.get('cacheService').get('codeSearchTables');
+		var hardcodedTables = injector.get('SEARCH_TABLES');
+		Array.prototype.push.apply(hardcodedTables, dynamicSearchTables
+			.filter(function (t) { return !hardcodedTables.includes(t.name); })
+			.map(function (t) { return t.name; })
+		);
+		parent.x_itx_codesearch_fixed = true;
+	});
+});]]></example>
+        <name>classic_studio_fix</name>
+        <public>false</public>
+        <restrict_scope>false</restrict_scope>
+        <sys_class_name>sys_client_extension_point</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-26 12:39:48</sys_created_on>
+        <sys_id>e4a25540c3ed7690de14d8477d0131cb</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>classic_studio_fix</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_client_extension_point_e4a25540c3ed7690de14d8477d0131cb</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-26 12:42:13</sys_updated_on>
+    </sys_client_extension_point>
+</record_update>

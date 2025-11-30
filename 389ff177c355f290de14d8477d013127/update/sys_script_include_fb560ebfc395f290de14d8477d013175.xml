@@ -9,147 +9,62 @@
         <mobile_callable>false</mobile_callable>
         <name>CodeSearchAPI</name>
         <sandbox_callable>false</sandbox_callable>
-        <script><![CDATA[/* global gs */
+        <script><![CDATA[/* global gs, sn_scoped_cache */
+/* global Set */
 /* global Class, GlideScriptedExtensionPoint, GlideRecord, GlideTableHierarchy */
 /* eslint no-undef: "error" */
 var CodeSearchAPI = Class.create();
 CodeSearchAPI.prototype = {
 	initialize: function () {
-		this.ext = new GlideScriptedExtensionPoint().getExtensions('CodeSearchExt')[0];
-		this.ext.initialize();
-	},
-
-	getTableFields: function (table) {
-		const dictionaryGr = new GlideRecord('sys_dictionary');
-		dictionaryGr.addQuery('name', 'IN', new GlideTableHierarchy(table).getTables());
-		dictionaryGr.addQuery('internal_type.scalar_type', 'string');
-		dictionaryGr.addQuery('element', '!=', 'sys_id');
-		dictionaryGr.addNotNullQuery('element');
-		dictionaryGr.query();
-
-		const fields = [{
-			name: 'sys_id',
-			type: 'GUID'
-		}];
-		while (dictionaryGr.next()) {
-			fields.push({
-				name: dictionaryGr.getValue('element'),
-				type: dictionaryGr.getValue('internal_type')
-			});
+		this.handlers = [];
+		for (const handler of new GlideScriptedExtensionPoint().getExtensions('CodeSearchHandler')) {
+			handler.initialize();
+			this.handlers.push(handler);
 		}
-
-		return fields;
 	},
-
+	
 	/**
-	 * @param {string} searchGroupName
+	 * @param {string} table
+	 * @param {string} term
+	 * @param {object} [options]
 	 * @returns {string[]}
 	 */
-	getSearchedTables: function (searchGroupName) {
-		const searchedTables = [];
-		const tableGr = new GlideRecord('sn_codesearch_table');
-		tableGr.addQuery('search_group.name', searchGroupName);
-		tableGr.query();
-		while (tableGr.next()) {
-			searchedTables.push(tableGr.table.toString());
-		}
-
-		return searchedTables;
-	},
-
-	/**
-	 * @param {GlideRecordGenerated & sys_metadata} metadataGr
-	 * @returns {object}
-	 */
-	metadataToData: function (metadataGr) {
-		const data = {
-			'class': metadataGr.getRecordClassName(),
-			sys_id: metadataGr.getUniqueValue()
-		};
-
-		const record = metadataGr.getElement('ref_' + data['class']);
-		if (record) {
-			const recordGr = record.getRefRecord();
-			if (recordGr && recordGr.isValidRecord()) {
-				data.fields = this._getFields(recordGr);
+	search: function (table, term, options) {
+		for (const handler of this.handlers) {
+			if (handler.handlesTable(table)) {
+				return handler.search(table, term, options);
 			}
 		}
 
-		return data;
-	},
-
-	/**
-	 * @param {GlideRecordGenerated} anyGr
-	 * @returns {{ name: string, value: string }[]}
-	 */
-	_getFields: function (anyGr) {
-		const fields = [];
-		anyGr.getElements().forEach((element) => {
-			const ge = element.getED();
-			const type = ge.getInternalType();
-			// gziped fields typically have this length (and usually there is only a single such field)
-			if (type == 'string' && ge.getLength() == 16777215) {
-				fields.push({
-					name: element.getName(),
-					value: this._deflateFields(element.toString())
-				});
-			} else if (type == 'glide_var' || type == 'variables') {
-				fields.push({
-					name: element.getName(),
-					value: this._glideVarFields(element)
-				});
-			} else {
-				fields.push({
-					name: element.getName(),
-					value: element.toString()
-				});
-			}
-		});
-
-		return fields;
-	},
-
-	/**
-	 * @param {string} value
-	 * @returns {{ name: string, value: string }[]}
-	 */
-	_deflateFields: function (value) {
-		if (value) {
-			const fields = JSON.parse(this.ext.inflate(value));
-			if (Array.isArray(fields)) {
-				return fields.map(field => {
-					return {
-						name: field.name,
-						value: field.value,
-						scriptActive: field.scriptActive,
-						scripts: field.script
-					};
-				});
-			}
-
-			// simple Object.<string, string>
-			return Object.entries(fields).map(([name, value]) => { return { name, value }; });
-		}
-
+		gs.warn(`no handler to search table '${table}' found`);
 		return [];
 	},
 
 	/**
-	 * @param {GlideElementGenerated} glideElement
-	 * @returns {{ name: string, value: string }[]}
+	 * @param {GlideRecordGenerated} anyGr
+	 * @returns {JSON}
 	 */
-	_glideVarFields: function (glideElement) {
-		const values = [];
-		for (const name in glideElement) {
-			if (name == 'sys_id' || name == 'sys_meta') continue;
+	serialize: function (anyGr) {
+		const klass = anyGr.getRecordClassName();
+		for (const handler of this.handlers) {
+			if (handler.handlesTable(klass)) {
+				// promote the anyGr reference from potential base table to actual table
+				if (klass != anyGr.getTableName()) {
+					const record = anyGr.getElement('ref_' + klass);
+					if (record) {
+						const recordGr = record.getRefRecord();
+						if (recordGr && recordGr.isValidRecord()) {
+							anyGr = recordGr;
+						}
+					}
+				}
 
-			values.push({
-				name: name,
-				value: String(glideElement[name])
-			});
+				return handler.serialize(anyGr);
+			}
 		}
 
-		return values;
+		gs.info(`no handler so serialize record in table '${klass}' found`);
+		return null;
 	},
 
 	type: 'CodeSearchAPI'
@@ -158,13 +73,13 @@ CodeSearchAPI.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-25 21:48:48</sys_created_on>
         <sys_id>fb560ebfc395f290de14d8477d013175</sys_id>
-        <sys_mod_count>5</sys_mod_count>
+        <sys_mod_count>25</sys_mod_count>
         <sys_name>CodeSearchAPI</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_fb560ebfc395f290de14d8477d013175</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-25 23:13:32</sys_updated_on>
+        <sys_updated_on>2025-11-29 20:52:37</sys_updated_on>
     </sys_script_include>
 </record_update>

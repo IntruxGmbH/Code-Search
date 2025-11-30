@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_itx_codesearch.Utilities</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <mobile_callable>false</mobile_callable>
+        <name>Utilities</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* global Set */
+/* global gs, sn_scoped_cache */
+/* global Class, GlideRecord, GlideTableHierarchy, GlideScriptedExtensionPoint */
+/* eslint no-undef: "error" */
+var Utilities = Class.create();
+Utilities.prototype = {
+	initialize: function () {
+		this.ext = new GlideScriptedExtensionPoint().getExtensions('CodeSearchExt')[0];
+		this.ext.initialize();
+	},
+
+	/**
+	 * @param {string} url
+	 * @returns {string}
+	 */
+	createTinyURL: function (url) {
+		return this.ext.createTinyURL(url);
+	},
+
+	/**
+	 * Transform "<target>.<field><operator><value>" to "<field><operator><value>"
+	 * e.g. "flow.descriptionCONTAINShello^flow.annotationCONTAINSworld" to
+	 * "descriptionCONTAINShello^annotationCONTAINSworld"
+	 * 
+	 * @param {string} target
+	 * @param {string} query
+	 * @returns {string}
+	 */
+	transformRemoteTableQuery: function (target, query) {
+		const targetMatches = target + '=';
+		const targetDotWlk = target + '.';
+		return query.split(/(?<!\^)\^EQ/).map(eq => {
+			return eq.split(/(?<!\^)\^NQ/).map(nq => {
+				return nq.split(/(?<!\^)\^OR/).map(or => {
+					return or.split(/(?<!\^)\^/).map(and => {
+						if (and.startsWith(targetMatches)) return and.replace(targetMatches, 'sys_id=');
+						else if (and.startsWith(targetDotWlk)) return and.replace(targetDotWlk, '');
+						else if (and.startsWith('sys_id')) return and;
+						// ignore all other (only data?) conditions parts
+						// currently (due to caching), there is no need
+						// to implement this
+					}).filter(q => !!q).join('^');
+				}).filter(q => !!q).join('^OR');
+			}).filter(q => !!q).join('^NQ');
+		}).filter(q => !!q).join('^EQ');
+	},
+
+	/**
+	 * @param {string} table
+	 * @returns {{name: string, type: string, max_length: number}[]}
+	 */
+	getTableFields: function (table) {
+		const cache = sn_scoped_cache.ScopedCacheManager.get('table_columns', table);
+		if (cache) {
+			return JSON.parse(cache);
+		}
+
+		const dictionaryGr = new GlideRecord('sys_dictionary');
+		dictionaryGr.addQuery('name', 'IN', new GlideTableHierarchy(table).getTables());
+		dictionaryGr.addQuery('internal_type.scalar_type', 'string');
+		dictionaryGr.addNotNullQuery('element');
+		dictionaryGr.query();
+
+		const fields = [{
+			name: 'sys_id',
+			type: 'GUID',
+			max_length: 32
+		}];
+		while (dictionaryGr.next()) {
+			const name = dictionaryGr.getValue('element');
+			if (name.startsWith('sys_')) continue;
+
+			fields.push({
+				name: name,
+				table: dictionaryGr.getValue('name'),
+				type: dictionaryGr.getValue('internal_type'),
+				max_length: +dictionaryGr.max_length.toString()
+			});
+		}
+
+		sn_scoped_cache.ScopedCacheManager.put('table_columns', table, JSON.stringify(fields));
+		return fields;
+	},
+
+	getTableTree: function (table) {
+		const children = {};
+
+		for (const child of new GlideTableHierarchy(table).getTableExtensions()) {
+			children[child] = this.getTableTree(child);
+		}
+		
+		return children;
+	},
+
+	/**
+	 * Returns the configuration (sys_metadata extension) tables
+	 * which are not covered by the given search group.
+	 * 
+	 * @param {string} searchGroupName
+	 * @returns {string[]}
+	 */
+	getSearchTables: function (searchGroupName) {
+		const ignoredTables = gs.getProperty('x_itx_codesearch.ignored_tables', '')
+			.split(',')
+			.map(x => x.trim())
+			.filter(x => !!x);
+
+		if (!searchGroupName) {
+			return new GlideTableHierarchy('sys_metadata')
+				.getTableExtensions()
+				.filter(t => !ignoredTables.includes(t));			
+		}
+		
+		const rootTables = new Set();
+		const tablePaths = [];
+
+		const searchedTables = [];
+		const tableGr = new GlideRecord('sn_codesearch_table');
+		tableGr.addQuery('search_group.name', searchGroupName);
+		tableGr.query();
+		while (tableGr.next()) {
+			const table = tableGr.table.toString();
+			const hierarchy = new GlideTableHierarchy(table);
+			tablePaths.push(hierarchy.getTables().reverse());
+			rootTables.add(hierarchy.getRoot());
+			searchedTables.push(table);
+		}
+
+		if (rootTables.has('sys_metadata')) {
+			if (rootTables.has('x_itx_codesearch_st_configuration')) {
+				const tree = {
+					sys_metadata: this.getTableTree('sys_metadata')
+				};
+
+				if (rootTables.has('x_itx_codesearch_st_flow')) {
+					tablePaths.push(new GlideTableHierarchy('sys_hub_flow_base').getTables().reverse());
+				}
+
+				if (rootTables.has('x_itx_codesearch_st_flow_action')) {
+					tablePaths.push(new GlideTableHierarchy('sys_hub_action_type_base').getTables().reverse());
+				}
+
+				for (const table of ignoredTables) {
+					tablePaths.push(new GlideTableHierarchy(table).getTables().reverse());
+				}
+
+				// remove the tables already covered 
+				tablePaths.forEach(path => {
+					// walk the branch just before the table
+					let step = tree[path[0]];
+					for (let i = 1; i < path.length - 1 && step; i++) {
+						step = step[path[i]];
+					}
+					
+					if (step) {
+						// remove the table and with it the branch
+						delete step[path.at(-1)];
+					}
+				});
+
+				searchedTables.push(...flatten(tree['sys_metadata']));
+			}
+
+		}
+
+		return searchedTables;
+
+		function flatten(obj, arr = []) {
+			for (const attr in obj) {
+				arr.push(attr, ...flatten(obj[attr]));
+			}
+
+			return arr;
+		}
+	},
+
+	/**
+	 * @param {GlideRecordGenerated} anyGr
+	 * @returns {{ name: string, value: string }[]}
+	 */
+	serializeFields: function (anyGr) {
+		const fields = [];
+		anyGr.getElements().forEach((element) => {
+			const ge = element.getED();
+			const name = ge.getName();
+			if (name.startsWith('sys_') && name != 'sys_id') return;
+
+			const type = ge.getInternalType();
+			// gziped fields typically have this length (and usually there is only a single such field)
+			if (type == 'string' && ge.getLength() == 16777215) {
+				fields.push({
+					name: name,
+					value: this.deflateFields(element.toString())
+				});
+			} else if (type == 'glide_var' || type == 'variables') {
+				fields.push({
+					name: name,
+					value: this.glideVarFields(element)
+				});
+			} else {
+				fields.push({
+					name: name,
+					value: element.toString()
+				});
+			}
+		});
+
+		return fields;
+	},
+
+	/**
+	 * @param {string} value
+	 * @returns {{ name: string, value: string }[]}
+	 */
+	deflateFields: function (value) {
+		if (value) {
+			const fields = JSON.parse(this.ext.inflate(value));
+			if (Array.isArray(fields)) {
+				return fields.map(field => {
+					return {
+						name: field.name,
+						value: field.value,
+						scriptActive: field.scriptActive,
+						scripts: field.script
+					};
+				});
+			}
+
+			// simple Object.<string, string>
+			return Object.entries(fields).map(([name, value]) => { return { name, value }; });
+		}
+
+		return [];
+	},
+
+	/**
+	 * @param {GlideElementGenerated} glideElement
+	 * @returns {{ name: string, value: string }[]}
+	 */
+	glideVarFields: function (glideElement) {
+		const values = [];
+		for (const name in glideElement) {
+			if (name == 'sys_id' || name == 'sys_meta') continue;
+
+			values.push({
+				name: name,
+				value: String(glideElement[name])
+			});
+		}
+
+		return values;
+	},
+
+	type: 'Utilities'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-29 18:32:17</sys_created_on>
+        <sys_id>64f1e54dc3e5b2d0de14d8477d0131d0</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>Utilities</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_script_include_64f1e54dc3e5b2d0de14d8477d0131d0</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-29 21:53:04</sys_updated_on>
+    </sys_script_include>
+</record_update>

@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_properties_category_m2m">
     <sys_properties_category_m2m action="INSERT_OR_UPDATE">
         <category display_value="Intrux Code Search Properties">10c202f3c395f290de14d8477d01313c</category>
-        <order>100</order>
+        <order>500</order>
         <property display_value="x_itx_codesearch.logging.verbosity" name="x_itx_codesearch.logging.verbosity">fc92c6b3c395f290de14d8477d013109</property>
         <sys_class_name>sys_properties_category_m2m</sys_class_name>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-25 21:28:22</sys_created_on>
         <sys_id>17b28eb3c395f290de14d8477d0131ab</sys_id>
-        <sys_mod_count>0</sys_mod_count>
+        <sys_mod_count>2</sys_mod_count>
         <sys_name>x_itx_codesearch.logging.verbosity.Intrux Code Search Properties</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_properties_category_m2m_17b28eb3c395f290de14d8477d0131ab</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-25 21:28:22</sys_updated_on>
+        <sys_updated_on>2025-11-30 18:53:43</sys_updated_on>
     </sys_properties_category_m2m>
 </record_update>

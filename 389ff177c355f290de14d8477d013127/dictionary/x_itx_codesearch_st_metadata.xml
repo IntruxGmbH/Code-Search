@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="fc5ada89c3a1f2d0de14d8477d0131ec" label="Metadata" max_length="40" name="x_itx_codesearch_st_metadata" type="collection">
+        <element attributes="readonly_clickthrough=true" display="true" label="Record" max_length="32" name="record" reference="sys_metadata" type="reference"/>
+        <element label="Actions" max_length="4000" name="actions" type="glide_action_list"/>
+        <element label="Class" max_length="80" name="sys_class_name" type="table_name"/>
+        <element label="Data" max_length="16777215" name="data" type="string"/>
+        <element attributes="readonly_clickthrough=true" label="Application" max_length="32" name="sys_scope" reference="sys_scope" type="reference"/>
+        <index name="index">
+            <element name="record"/>
+        </index>
+        <index name="index2">
+            <element name="sys_scope"/>
+        </index>
+    </element>
+</database>

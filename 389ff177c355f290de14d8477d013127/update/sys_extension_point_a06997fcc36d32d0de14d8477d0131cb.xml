@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_extension_point">
+    <sys_extension_point action="INSERT_OR_UPDATE">
+        <api_name>x_itx_codesearch.CodeSearchHandler</api_name>
+        <description/>
+        <example><![CDATA[/* global gs */
+/* global Class, GlideRecord */
+/* eslint no-undef: "error" */
+var CodeSearchHandler = Class.create();
+CodeSearchHandler.prototype = {
+	initialize: function () {
+	},
+
+	/**
+	 * test if this extensionpoint can search and serialize the given table
+	 * 
+	 * @param {string} table
+	 * @return {boolean}
+	 */
+	handlesTable: function (table) {
+		throw new Error('not implemented');
+	},
+
+	/**
+	 * get the SysIDs of records that match the record
+	 * 
+	 * @param {string} table
+	 * @param {string} term
+	 * @param {object} [options]
+	 * @param {object} [options.scope]
+ 	 * @param {number} [options.limit]
+	 * @returns {string[]}
+	 */
+	search: function (table, term, options) {
+		throw new Error('not implemented');
+	},
+
+	/**
+	 * Serialize the given record into a JSON.stringify-able data structure
+	 * sutable to be used in a code search.
+	 * 
+	 * @param {GlideRecordGenerated} anyGr
+	 * @param {object} [options]
+	 * @returns {JSON}
+	 */
+	serialize: function (anyGr, options) {
+		throw new Error('not implemented');
+	},
+
+	type: 'CodeSearchHandler'
+};]]></example>
+        <name>CodeSearchHandler</name>
+        <restrict_scope>false</restrict_scope>
+        <sys_class_name>sys_extension_point</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-29 06:22:35</sys_created_on>
+        <sys_id>a06997fcc36d32d0de14d8477d0131cb</sys_id>
+        <sys_mod_count>4</sys_mod_count>
+        <sys_name>CodeSearchHandler</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_extension_point_a06997fcc36d32d0de14d8477d0131cb</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-29 21:29:55</sys_updated_on>
+    </sys_extension_point>
+</record_update>

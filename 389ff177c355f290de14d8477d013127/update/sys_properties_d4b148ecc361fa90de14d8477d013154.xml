@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_properties">
+    <sys_properties action="INSERT_OR_UPDATE">
+        <choices/>
+        <description>Use cache to speedup the code search (used for flows and flow actions).</description>
+        <ignore_cache>true</ignore_cache>
+        <is_private>false</is_private>
+        <name>x_itx_codesearch.use_cache</name>
+        <read_roles/>
+        <suffix>use_cache</suffix>
+        <sys_class_name>sys_properties</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-27 20:00:05</sys_created_on>
+        <sys_id>d4b148ecc361fa90de14d8477d013154</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>x_itx_codesearch.use_cache</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_properties_d4b148ecc361fa90de14d8477d013154</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-30 18:51:43</sys_updated_on>
+        <type>boolean</type>
+        <value>true</value>
+        <write_roles/>
+        <x_intr_prop_list/>
+        <x_intr_prop_reference/>
+        <x_intr_prop_table/>
+    </sys_properties>
+    <sys_translated_text action="delete_multiple" query="documentkey=d4b148ecc361fa90de14d8477d013154"/>
+</record_update>

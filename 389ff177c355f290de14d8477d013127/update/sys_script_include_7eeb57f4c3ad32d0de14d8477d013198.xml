@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_itx_codesearch.CodeSearchHandlerForm</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>Implements extension point x_itx_codesearch.CodeSearchHandler</description>
+        <mobile_callable>false</mobile_callable>
+        <name>CodeSearchHandlerForm</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* global Set */
+/* global gs */
+/* global Class, GlideRecord */
+/* eslint no-undef: "error" */
+var CodeSearchHandlerForm = Class.create();
+CodeSearchHandlerForm.prototype = {
+	initialize: function () {
+		
+	},
+
+	/**
+	 * test if this extensionpoint can handle the given table
+	 * 
+	 * @param {string} tableName
+	 * @return {boolean}
+	 */
+	handlesTable: function (tableName) {
+		return tableName == 'sys_ui_section';
+	},
+
+	/**
+	 * get the SysIDs of records that match the record
+	 * 
+	 * @param {string} table
+	 * @param {string} term
+	 * @param {object} [options]
+	 * @param {number} [options.limit]
+	 * @returns {string[]}
+	 */
+	search: function (table, term, options) {
+		const hits = new Set();
+		const uiSectionGr = new GlideRecord('sys_ui_section');
+		uiSectionGr.addQuery('sys_id', term)
+			.addOrCondition('name', 'CONTAINS', term)
+			.addOrCondition('caption', 'CONTAINS', term)
+			.addOrCondition('view', 'CONTAINS', term)
+			.addOrCondition('view.title', 'CONTAINS', term)
+			.addOrCondition('view.name', 'CONTAINS', term);
+
+		if (options?.scope) {
+			uiSectionGr.addQuery('sys_scope', options.scope);
+		}
+
+		if (options?.limit) {
+			uiSectionGr.setLimit(options.limit);
+		}
+
+		uiSectionGr.orderByDesc('sys_updated_on');
+		uiSectionGr.query();
+		while (uiSectionGr.next()) {
+			hits.add(uiSectionGr.getUniqueValue());
+		}
+
+		const uiElementGr = new GlideRecord('sys_ui_element');
+		uiElementGr.addQuery('sys_id', term)
+			.addOrCondition('element', 'CONTAINS', term)
+			.addOrCondition('type', 'CONTAINS', term)
+			.addOrCondition('sys_ui_formatter', term)
+			.addOrCondition('sys_ui_formatter.name', 'CONTAINS', term)
+			.addOrCondition('sys_ui_formatter.formatter', 'CONTAINS', term);
+		
+		if (options?.scope) {
+			uiElementGr.addQuery('sys_ui_section.sys_scope', options.scope);
+		} else {
+			uiElementGr.addNotNullQuery('sys_ui_section');
+		}
+
+		if (options?.limit) {
+			uiElementGr.setLimit(options.limit);
+		}
+
+		uiElementGr.orderByDesc('sys_updated_on');
+		uiElementGr.query();
+		while (uiElementGr.next()) {
+			hits.add(uiElementGr.getUniqueValue());
+		}
+
+		const annotationGr = new GlideRecord('sys_ui_annotation');
+		annotationGr.addQuery('sys_id', term)
+			.addOrCondition('text', 'CONTAINS', term);
+
+		if (options?.limit) {
+			annotationGr.setLimit(options.limit);
+		}
+
+		// there are typically less than 5k annotations per instance
+		// so it is not very costly to loop over the results
+		annotationGr.query();
+		if (options?.scope) {
+			while (annotationGr.next()) {
+				const uiElementGr = new GlideRecord('sys_ui_element');
+				uiElementGr.addQuery('sys_ui_section.sys_scope', options.scope);
+				uiElementGr.addQuery('type', 'annotation');
+				uiElementGr.addQuery('element', annotationGr.sys_id);
+				uiElementGr.setLimit(10);
+				uiElementGr.query();
+				while (uiElementGr.next()) {
+					// should actually only be a single usage of the annotation
+					hits.add(uiElementGr.getValue('sys_ui_section'));
+				}
+			}
+		} else {
+			while (annotationGr.next()) {
+				const uiElementGr = new GlideRecord('sys_ui_element');
+				uiElementGr.addNotNullQuery('sys_ui_section');
+				uiElementGr.addQuery('type', 'annotation');
+				uiElementGr.addQuery('element', annotationGr.sys_id);
+				uiElementGr.setLimit(10);
+				uiElementGr.query();
+				while (uiElementGr.next()) {
+					// should actually only be a single usage of the annotation
+					hits.add(uiElementGr.getValue('sys_ui_section'));
+				}
+			}
+		}
+
+		return [...hits];
+	},
+
+	/**
+	 * Serialize the given record into a JSON.stringify-able data structure
+	 * sutable to be used in a code search.
+	 * 
+	 * @param {GlideRecordGenerated & sys_ui_section} uiSectionGr
+	 * @param {object} [options]
+	 * @returns {JSON}
+	 */
+	serialize: function (uiSectionGr, options) {
+		const elements = [];
+		const uiElementGr = new GlideRecord('sys_ui_element');
+		uiElementGr.addQuery('sys_ui_section', uiSectionGr.sys_id);
+		uiElementGr.orderBy('position');
+		uiElementGr.query();
+		while (uiElementGr.next()) {
+			const element = {
+				element: uiElementGr.element.toString(),
+				position: +uiElementGr.position.toString(),
+				type: uiElementGr.type.toString(),
+			};
+
+			if (element.type == 'annotation') {
+				const annotationGr = new GlideRecord('sys_ui_annotation');
+				annotationGr.addQuery('sys_id', uiElementGr.element);
+				annotationGr.setLimit(1);
+				annotationGr.query();
+				if (annotationGr.next()) {
+					element.text = annotationGr.text.toString();
+				}
+			}
+
+			element.push(element);
+		}
+
+		return {
+			title: uiSectionGr.title.toString(),
+			table: uiSectionGr.name.toString(),
+			caption: uiSectionGr.caption.toString(),
+			view_name: uiSectionGr.view_name.toString(),
+			view: {
+				name: uiSectionGr.view.name.toString(),
+				title: uiSectionGr.view.title.toString()
+			},
+			elements: elements
+		};
+	},
+
+	type: 'CodeSearchHandlerForm'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-29 06:31:36</sys_created_on>
+        <sys_id>7eeb57f4c3ad32d0de14d8477d013198</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name>CodeSearchHandlerForm</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_script_include_7eeb57f4c3ad32d0de14d8477d013198</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-29 20:47:54</sys_updated_on>
+    </sys_script_include>
+</record_update>

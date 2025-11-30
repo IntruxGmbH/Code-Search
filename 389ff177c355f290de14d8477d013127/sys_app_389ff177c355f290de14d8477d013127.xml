@@ -22,11 +22,7 @@
         <runtime_access_tracking>permissive</runtime_access_tracking>
         <scope>x_itx_codesearch</scope>
         <scoped_administration>false</scoped_administration>
-        <short_description>Enables Code Search on all configuration / application file / sys_metadata records which are not yet covered by the OOTB code search configuration.&#13;
-Search can be configured using this application's properties.&#13;
-&#13;
-Author: Markus Kraus (markus.kraus@intrux.ch)&#13;
-Website: https://intrux.swiss</short_description>
+        <short_description>Enables Code Search on all configuration / application file / sys_metadata records which are not yet covered by the OOTB code search configuration.</short_description>
         <source>x_itx_codesearch</source>
         <store_correlation_id/>
         <store_url/>
@@ -36,9 +32,9 @@ Website: https://intrux.swiss</short_description>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-25 21:14:38</sys_created_on>
         <sys_id>389ff177c355f290de14d8477d013127</sys_id>
-        <sys_mod_count>5</sys_mod_count>
+        <sys_mod_count>7</sys_mod_count>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-25 21:28:50</sys_updated_on>
+        <sys_updated_on>2025-11-30 19:35:40</sys_updated_on>
         <template/>
         <trackable>true</trackable>
         <uninstall_blocked>false</uninstall_blocked>

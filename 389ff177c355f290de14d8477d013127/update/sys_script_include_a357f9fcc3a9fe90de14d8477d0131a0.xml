@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_itx_codesearch.CodeSearchUtilClient</api_name>
+        <caller_access/>
+        <client_callable>true</client_callable>
+        <description/>
+        <mobile_callable>false</mobile_callable>
+        <name>CodeSearchUtilClient</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* global global */
+/* global Class, GlideScriptedHierarchicalWorker */
+/* eslint no-undef: "error" */
+var CodeSearchUtilClient = Class.create();
+CodeSearchUtilClient.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+	startSearch: function () {
+		const term = this.getParameter('term');
+		const result = {
+			status: 'error',
+			messsage: 'unknown error'
+		};
+
+		if (term) {
+			const worker = new GlideScriptedHierarchicalWorker();
+			worker.setProgressName('Intrux Code Search: ' + term);
+			worker.setScriptIncludeName('x_itx_codesearch.CodeSearchWorker');
+			worker.setScriptIncludeMethod('search');
+			worker.putMethodArg('term', term);
+			worker.putMethodArg('scope', this.getParameter('scope'));
+			worker.putMethodArg('searchGroup', this.getParameter('search_group'));
+			worker.setBackground(true);
+			worker.start();
+
+			result.execution_id = worker.getProgressID();
+			result.status = 'success';
+			result.message = '';
+		} else {
+			result.message = 'term must be provided';
+		}
+
+		return JSON.stringify(result);
+	},
+
+    type: 'CodeSearchUtilClient'
+});]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-28 23:18:46</sys_created_on>
+        <sys_id>a357f9fcc3a9fe90de14d8477d0131a0</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name>CodeSearchUtilClient</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_script_include_a357f9fcc3a9fe90de14d8477d0131a0</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-29 18:35:36</sys_updated_on>
+    </sys_script_include>
+</record_update>

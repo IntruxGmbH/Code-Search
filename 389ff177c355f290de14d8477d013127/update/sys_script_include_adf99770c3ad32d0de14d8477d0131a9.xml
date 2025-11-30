@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_itx_codesearch.CodeSearchHandlerGeneral</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>Implements extension point x_itx_codesearch.CodeSearchHandler</description>
+        <mobile_callable>false</mobile_callable>
+        <name>CodeSearchHandlerGeneral</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* global Set */
+/* global gs, sn_scoped_cache, x_itx_codesearch */
+/* global Class, GlideRecord, GlideTableHierarchy */
+/* eslint no-undef: "error" */
+var CodeSearchHandlerGeneral = Class.create();
+CodeSearchHandlerGeneral.prototype = {
+	initialize: function () {
+		this.util = new x_itx_codesearch.Utilities();
+
+		this.use_cache = gs.getProperty('x_itx_codesearch.use_cache') == 'true';
+		if (this.use_cache) {
+			// automatic cache clear when script is updated and the data structure changed
+			this.cache_version = '1';
+			this._checkCache('metadata_json_data');
+		}
+	},
+
+	_checkCache: function (cache) {
+		if (sn_scoped_cache.ScopedCacheManager.get(cache, 'cache_version') != this.cache_version) {
+			sn_scoped_cache.ScopedCacheManager.flushScopedCache(cache);
+			sn_scoped_cache.ScopedCacheManager.put(cache, 'cache_version', this.cache_version);
+			gs.info(`clearing cache ${cache} - upgrading to cache version ${this.cache_version}`);
+		}
+	},
+
+	/**
+	 * test if this extensionpoint can handle the given table
+	 * @param {string} tableName
+	 * @return {boolean}
+	 */
+	handlesTable: function (tableName) {
+		return new GlideTableHierarchy(tableName).getRoot() == 'sys_metadata';
+	},
+
+	/**
+	 * @param {string} table
+	 * @param {string} term
+	 * @param {object} options
+	 * @returns {string[]}
+	 */
+	search: function (table, term, options) {
+		const queryParts = [];
+		const variableFields = [];
+		this.util.getTableFields(table).forEach(field => {
+			if (field.type == 'glide_var' || field.type == 'variables') {
+				variableFields.push(field);
+			} else {
+				const base = 'ref_' + table + '.' + field.name;
+				if (field.name == 'sys_id') {
+					queryParts.push(base + '=' + term);
+				} else {
+					queryParts.push(base + 'LIKE' + term);
+				}
+			}
+		});
+
+		const hits = new Set();
+		// doing search on sys_metadata with INSTANCEOF operator to not create cross scope privilege
+		const metadataGr = new GlideRecord('sys_metadata');
+		metadataGr.addQuery('sys_class_name', table);
+
+		if (options?.scope) {
+			metadataGr.addQuery('sys_scope', options.scope);
+		}
+
+		metadataGr.addEncodedQuery(queryParts.join('^OR'));
+
+		if (options?.limit) {
+			metadataGr.setLimit(options.limit);
+		}
+		
+		metadataGr.query();
+		while (metadataGr.next()) {
+			hits.add(metadataGr.getUniqueValue());
+		}
+
+		// Related List Query on sys_variable_value did not seem to work reliable,
+		// so we do the lookup in a dedicated query
+		if (variableFields.length) {
+			const variableGr = new GlideRecord('sys_variable_value');
+			variableGr.addQuery('document', table);
+			variableGr.addQuery('document_key', 'NOT IN', [...hits]);
+			variableGr.addNotNullQuery('document_key');
+			variableGr.addQuery('value', 'CONTAINS', term);
+			variableGr.addJoinQuery(table, 'document_key', 'sys_id');
+			variableGr.query();
+			if (options?.scope) {
+				const variableHits = new Set();
+				while (variableGr.next()) {
+					variableHits.add(variableGr.getValue('document_key'));
+				}
+
+				const metadataGr = new GlideRecord('sys_metadata');
+				metadataGr.addQuery('sys_scope', options.scope);
+				metadataGr.addQuery('sys_id', 'IN', [...variableFields]);
+				metadataGr.setLimit(this.limit);
+				metadataGr.query();
+				while (metadataGr.next()) {
+					hits.add(metadataGr.getUniqueValue());
+				}
+			} else {
+				while (variableGr.next()) {
+					hits.add(variableGr.getValue('document_key'));
+				}
+			}
+		}
+
+		return [...hits];
+	},
+
+	/**
+	 * Serialize the given record into a JSON.stringify-able data structure
+	 * sutable to be used in a code search.
+	 * 
+	 * @param {GlideRecordGenerated} anyGr
+	 * @param {object} options
+	 * @returns {JSON}
+	 */
+	serialize: function (anyGr, options) {
+		const sysId = anyGr.getUniqueValue();
+		if (this.use_cache) {
+			const data = sn_scoped_cache.ScopedCacheManager.get('metadata_json_data', sysId);
+			if (data) {
+				return JSON.parse(data);
+			}
+		}
+
+		const data = {
+			'class': anyGr.getRecordClassName(),
+			sys_id: anyGr.getUniqueValue(),
+			field: this.util.serializeFields(anyGr)
+		};
+
+		sn_scoped_cache.ScopedCacheManager.putRow('metadata_json_data', sysId, JSON.stringify(data), sysId);
+		return data;
+	},
+
+	type: 'CodeSearchHandlerGeneral'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-29 06:23:04</sys_created_on>
+        <sys_id>adf99770c3ad32d0de14d8477d0131a9</sys_id>
+        <sys_mod_count>11</sys_mod_count>
+        <sys_name>CodeSearchHandlerGeneral</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_script_include_adf99770c3ad32d0de14d8477d0131a9</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-30 18:31:40</sys_updated_on>
+    </sys_script_include>
+</record_update>

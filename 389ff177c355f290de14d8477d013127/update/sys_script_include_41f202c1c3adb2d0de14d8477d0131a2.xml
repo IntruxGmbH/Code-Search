@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_itx_codesearch.CodeSearchHandlerFlow</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>Implements extension point x_itx_codesearch.CodeSearchHandler</description>
+        <mobile_callable>false</mobile_callable>
+        <name>CodeSearchHandlerFlow</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* global gs, sn_scoped_cache, x_itx_codesearch */
+/* global Class, GlideRecord */
+/* eslint no-undef: "error" */
+var CodeSearchHandlerFlow = Class.create();
+CodeSearchHandlerFlow.prototype = {
+	initialize: function () {
+		this.util = new x_itx_codesearch.Utilities();
+		this.use_cache = gs.getProperty('x_itx_codesearch.use_cache') == 'true';
+		if (this.use_cache) {
+			// automatic cache clear when script is updated and the data structure changed
+			this.cache_version = '1';
+			this._checkCache('flow_json_data');
+		}
+	},
+
+	_checkCache: function (cache) {
+		if (sn_scoped_cache.ScopedCacheManager.get(cache, 'cache_version') != this.cache_version) {
+			sn_scoped_cache.ScopedCacheManager.flushScopedCache(cache);
+			sn_scoped_cache.ScopedCacheManager.put(cache, 'cache_version', this.cache_version);
+			gs.info(`clearing cache ${cache} - upgrading to cache version ${this.cache_version}`);
+		}
+	},
+
+	/**
+	 * test if this extensionpoint can search and serialize the given table
+	 * 
+	 * @param {string} table
+	 * @return {boolean}
+	 */
+	handlesTable: function (table) {
+		return table == 'sys_hub_flow';
+	},
+
+	/**
+	 * get the SysIDs of records that match the record
+	 * 
+	 * @param {string} table
+	 * @param {string} term
+	 * @param {object} [options]
+	 * @param {number} [options.limit]
+	 * @param {string} [options.scope]
+	 * @returns {string[]}
+	 */
+	search: function (table, term, options) {
+		const flowGr = new GlideRecord('x_itx_codesearch_st_flow');
+		flowGr.addQuery('data', 'CONTAINS', term);
+		if (options?.scope) {
+			flowGr.addQuery('sys_class_name', options.scope);
+		}
+
+		if (options?.limit) {
+			flowGr.setLimit(options.limit);
+		}
+
+		const sysIDs = [];
+		flowGr.query();
+		while (flowGr.next()) {
+			sysIDs.push(flowGr.getUniqueValue());
+		}
+		
+		return sysIDs;
+	},
+
+	/**
+	 * Flow consist of flow components - there are currently 6 different flow component types
+	 * which store the values either (*_v2) in a single field (gzip'ed), or in GlideVar fields.
+	 * Since the v2-version have only a single field, this field is flattened directly into the
+	 * actions's field.
+	 * The old (non-v2) components often have multiple GlideVar fields so do very likely have
+	 * overlapping fields - in this the actions's fields have array as values.
+	 * 
+	 * @param {GlideRecordGenerated & sys_hub_flow} flowGr
+	 * @param {object} [options]
+	 * @returns {JSON}
+	 */
+	serialize: function (flowGr, options) {
+		const flowSysId = flowGr.getUniqueValue();
+		if (this.use_cache) {
+			const data = sn_scoped_cache.ScopedCacheManager.get('flow_json_data', flowSysId);
+			if (data) {
+				return JSON.parse(data);
+			}
+		}
+
+		const data = {
+			sys_id: flowSysId,
+			name: flowGr.name.toString(),
+			description: flowGr.description.toString(),
+			annotation: flowGr.annotation.toString(),
+			trigger: this.flowTriggerToJSON(flowGr),
+			actions: this.flowActionsToJSON(flowGr)
+		};
+
+		sn_scoped_cache.ScopedCacheManager.putRow('flow_json_data', flowSysId, JSON.stringify(data), flowSysId);
+		return data;
+	},
+
+	/**
+	 * Note: trigger_type values can be found in the sys_hub_trigger_definition table
+	 * 
+	 * @param {GlideRecordGenerated & sys_hub_flow_base} flowGr
+	 * @returns {JSON}
+	 */
+	flowTriggerToJSON: function (flowGr) {
+		if (!flowGr.remote_trigger_id) {
+			// subflow do not have triggers
+			return null;
+		}
+
+		// remote_trigger_id is a string type, the record needs to be loaded
+		// from the base in order to find out which table it resides in
+		const data = {
+
+		};
+
+		let triggerGr = new GlideRecord('sys_flow_trigger');
+		triggerGr.addQuery('sys_id', flowGr.remote_trigger_id);
+		triggerGr.setLimit(1);
+		triggerGr.query();
+		if (triggerGr.next()) {
+			const klass = triggerGr.getRecordClassName();
+			if (klass != triggerGr.getTableName()) {
+				triggerGr = triggerGr.getElement('ref_' + klass).getRefRecord();
+			}
+
+			if (triggerGr.isValidRecord()) {
+				if (klass == 'sys_flow_trigger') {
+					data.trigger_type = triggerGr.name.toString();
+				}
+				else if (klass == 'sys_flow_record_trigger') {
+					if (triggerGr.on_insert && triggerGr.on_update) data.trigger_type = 'record_create_or_update';
+					else if (triggerGr.on_insert) data.trigger_type = 'record_create';
+					else if (triggerGr.on_update) data.trigger_type = 'record_update';
+					data.table = triggerGr.table.toString();
+					data.conditions = triggerGr.condition.toString();
+				}
+				else if (klass == 'sys_flow_catalog_trigger') {
+					data.trigger_type = 'service_catalog';
+				}
+				else if (klass == 'sys_flow_timer_trigger') {
+					data.time = triggerGr.time;
+					if (triggerGr.trigger_definition) {
+						data.trigger_type = triggerGr.trigger_definition.type.toString();
+					}
+					else {
+						data.trigger_type = 'run_once';
+					}
+				}
+				else if (klass == 'sys_flow_knowledge_trigger') {
+					data.trigger_type = 'knowledge_management';
+				}
+				else if (klass == 'sys_flow_email_trigger') {
+					data.trigger_type = 'email';
+					data.event = triggerGr.event_name.toString();
+					data.conditions = triggerGr.email_conditions.toString();
+				}
+				else {
+					data.trigger_type = klass.replace(/^sys_flow_/, '').replace(/_trigger$/, '');
+				}
+			}
+		}
+		else {
+			triggerGr = new GlideRecord('sys_hub_trigger_instance');
+			triggerGr.addQuery('flow', flowGr.sys_id);
+			triggerGr.setLimit(1);
+			triggerGr.query();
+			if (triggerGr.next()) {
+				data.trigger_type = triggerGr.trigger_definition.type.toString();
+			}
+		}
+
+		if (triggerGr.isValidRecord()) {
+			data.fields = this.util.serializeFields(triggerGr);
+		}
+
+		return data;
+	},
+
+	/**
+	 * Flow consist of flow components - there are currently 6 different flow component types
+	 * which store the values either (*_v2) in a single field (gzip'ed), or in GlideVar fields.
+	 * Since the v2-version have only a single field, this field is flattened directly into the
+	 * actions's field.
+	 * The old (non-v2) components often have multiple GlideVar fields so do very likely have
+	 * overlapping fields - in this the actions's fields have array as values.
+	 * 
+	 * @param {GlideRecordGenerated & sys_hub_flow_base} flowGr
+	 * @returns {JSON}
+	 */
+	flowActionsToJSON: function (flowGr) {
+		const actions = [];
+		// Note: There is no need to order here as we need to do a numeric sort later (orderBy will do a lexicographic order)
+		const componentGr = new GlideRecord('sys_hub_flow_component');
+		componentGr.addQuery('flow', flowGr.sys_id);
+		componentGr.query();
+		while (componentGr.next()) {
+			const order = +componentGr.order.toString();
+			const action = {
+				label: `${order}: `,
+				order: order,
+				comment: componentGr.comment.toString()
+			};
+
+			const klass = componentGr.getRecordClassName();
+			const actionGr = klass == componentGr.getTableName() ? componentGr : componentGr.getElement('ref_' + klass).getRefRecord();
+			if (actionGr.isValidRecord()) {
+				if (klass == 'sys_hub_action_instance_v2') {
+					action.label += actionGr.getDisplayValue('action_type');
+				} else if (klass == 'sys_hub_flow_logic_instance_v2') {
+					action.label += actionGr.getDisplayValue('logic_definition');
+				} else if (klass == 'sys_hub_sub_flow_instance_v2') {
+					action.label += 'Subflow';
+					action.subflow = actionGr.getDisplayValue('subflow');
+					action.wait_for_completion = !!actionGr.wait_for_completion;
+				} else if (klass == 'sys_hub_action_instance') {
+					action.label += actionGr.getDisplayValue('action_type');
+				} else if (klass == 'sys_hub_flow_logic') {
+					action.label += actionGr.getDisplayValue('logic_definition');
+				} else if (klass == 'sys_hub_sub_flow_instance') {
+					action.label += 'Subflow';
+					action.subflow = actionGr.getDisplayValue('subflow');
+					action.wait_for_completion = !!actionGr.wait_for_completion;
+				} else {
+					action.label += '(Unknown Flow Component)';
+				}
+			}
+
+			action.fields = this.util.serializeFields(actionGr);
+			actions.push(action);
+		}
+
+		return actions.sort((x, y) => x.order - y.order);
+	},
+
+	type: 'CodeSearchHandlerFlow'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-29 18:41:24</sys_created_on>
+        <sys_id>41f202c1c3adb2d0de14d8477d0131a2</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>CodeSearchHandlerFlow</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_script_include_41f202c1c3adb2d0de14d8477d0131a2</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-29 20:19:57</sys_updated_on>
+    </sys_script_include>
+</record_update>

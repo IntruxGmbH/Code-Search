@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script/>
+        <description/>
+        <direct>false</direct>
+        <endpoint>x_itx_codesearch_about.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<p>Intrux Code Search</p>
+	<p>Features</p>
+	<ul>
+		<li>Search Flows</li>
+		<li>Search Flow Actions</li>
+		<li>Search Workflow</li>
+		<li>Search Form (and Annotations)</li>
+		<li>Search all other application files (fallback handler)</li>
+		<li>Fix Classic Studio Code Search</li>
+	</ul>
+	<p>
+		Changelog:
+		<ul>
+			<li>1.0: Initial Release</li>
+		</ul>
+	</p>
+	<p><a target="blank" href="https://intrux.swiss">https://intrux.swiss</a></p>
+	<p><a href="mailto:info@intrux.ch">info@intrux.ch</a></p>
+</j:jelly>]]></html>
+        <name>about</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-26 17:04:04</sys_created_on>
+        <sys_id>153fbd08c3e5b690de14d8477d013138</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name>about</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_ui_page_153fbd08c3e5b690de14d8477d013138</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-30 18:58:10</sys_updated_on>
+    </sys_ui_page>
+</record_update>

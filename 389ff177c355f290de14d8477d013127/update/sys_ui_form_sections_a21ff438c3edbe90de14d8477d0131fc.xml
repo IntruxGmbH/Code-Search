@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_ui_form_sections form_id="a21ff438c3edbe90de14d8477d0131fc" sys_domain="global" table="sys_hub_sub_flow_instance_inputs" version="3">
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>0</position>
+            <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+            <sys_created_on>2025-11-28 19:06:28</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>ee1f3838c3edbe90de14d8477d013152</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="sys_hub_sub_flow_instance_inputs" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">a21ff438c3edbe90de14d8477d0131fc</sys_ui_form>
+            <sys_ui_section caption="NULL" display_value="" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">2a1f3838c3edbe90de14d8477d013139</sys_ui_section>
+            <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+            <sys_updated_on>2025-11-28 19:06:28</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>1</position>
+            <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+            <sys_created_on>2025-11-28 19:06:28</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>221f3838c3edbe90de14d8477d013169</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="sys_hub_sub_flow_instance_inputs" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">a21ff438c3edbe90de14d8477d0131fc</sys_ui_form>
+            <sys_ui_section caption="Reference Specification" display_value="Reference Specification" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">6a1f3838c3edbe90de14d8477d013153</sys_ui_section>
+            <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+            <sys_updated_on>2025-11-28 19:06:28</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>2</position>
+            <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+            <sys_created_on>2025-11-28 19:06:28</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>261f3838c3edbe90de14d8477d013124</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="sys_hub_sub_flow_instance_inputs" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">a21ff438c3edbe90de14d8477d0131fc</sys_ui_form>
+            <sys_ui_section caption="Choice List Specification" display_value="Choice List Specification" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">aa1f3838c3edbe90de14d8477d01310d</sys_ui_section>
+            <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+            <sys_updated_on>2025-11-28 19:06:28</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>3</position>
+            <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+            <sys_created_on>2025-11-28 19:06:28</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>621f3838c3edbe90de14d8477d01312f</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="sys_hub_sub_flow_instance_inputs" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">a21ff438c3edbe90de14d8477d0131fc</sys_ui_form>
+            <sys_ui_section caption="Dependent Field" display_value="Dependent Field" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">ae1f3838c3edbe90de14d8477d013124</sys_ui_section>
+            <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+            <sys_updated_on>2025-11-28 19:06:28</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>4</position>
+            <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+            <sys_created_on>2025-11-28 19:06:28</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>ae1f3838c3edbe90de14d8477d013138</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="sys_hub_sub_flow_instance_inputs" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">a21ff438c3edbe90de14d8477d0131fc</sys_ui_form>
+            <sys_ui_section caption="Calculated Value" display_value="Calculated Value" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">ea1f3838c3edbe90de14d8477d01312f</sys_ui_section>
+            <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+            <sys_updated_on>2025-11-28 19:06:28</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form_section action="INSERT_OR_UPDATE">
+            <position>5</position>
+            <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+            <sys_created_on>2025-11-28 19:06:28</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>6e1f3838c3edbe90de14d8477d013173</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_overrides/>
+            <sys_ui_form display_value="sys_hub_sub_flow_instance_inputs" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">a21ff438c3edbe90de14d8477d0131fc</sys_ui_form>
+            <sys_ui_section caption="Default Value" display_value="Default Value" name="sys_hub_sub_flow_instance_inputs" sys_domain="global" view="7966be310a0a0b8c00bd504090503227">aa1f3838c3edbe90de14d8477d013169</sys_ui_section>
+            <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+            <sys_updated_on>2025-11-28 19:06:28</sys_updated_on>
+        </sys_ui_form_section>
+        <sys_ui_form action="INSERT_OR_UPDATE">
+            <name>sys_hub_sub_flow_instance_inputs</name>
+            <roles/>
+            <sys_class_name>sys_ui_form</sys_class_name>
+            <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+            <sys_created_on>2025-11-28 19:06:28</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>a21ff438c3edbe90de14d8477d0131fc</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>sys_hub_sub_flow_instance_inputs</sys_name>
+            <sys_overrides/>
+            <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+            <sys_update_name>sys_ui_form_sections_a21ff438c3edbe90de14d8477d0131fc</sys_update_name>
+            <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+            <sys_updated_on>2025-11-28 19:06:28</sys_updated_on>
+            <sys_user/>
+            <view display_value="Advanced" name="advanced">7966be310a0a0b8c00bd504090503227</view>
+            <view_name/>
+        </sys_ui_form>
+    </sys_ui_form_sections>
+</record_update>

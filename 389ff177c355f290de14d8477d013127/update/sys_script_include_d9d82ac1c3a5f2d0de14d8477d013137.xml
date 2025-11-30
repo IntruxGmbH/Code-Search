@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_itx_codesearch.CodeSearchHandlerWorkflow</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>Implements extension point x_itx_codesearch.CodeSearchHandler</description>
+        <mobile_callable>false</mobile_callable>
+        <name>CodeSearchHandlerWorkflow</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* global Set */
+/* global gs */
+/* global Class, GlideRecord */
+/* eslint no-undef: "error" */
+var CodeSearchHandlerWorkflow = Class.create();
+CodeSearchHandlerWorkflow.prototype = {
+	initialize: function () {
+		
+	},
+
+	/**
+	 * test if this extensionpoint can search and serialize the given table
+	 * 
+	 * @param {string} table
+	 * @return {boolean}
+	 */
+	handlesTable: function (table) {
+		return table == 'wf_workflow';
+	},
+
+	/**
+	 * get the SysIDs of records that match the record
+	 * 
+	 * @param {string} table
+	 * @param {string} term
+	 * @param {object} [options]
+	 * @param {number} [options.limit]
+	 * @returns {string[]}
+	 */
+	search: function (table, term, options) {
+		const hits = new Set();
+		const wfGr = new GlideRecord('wf_workflow');
+		wfGr.addQuery('sys_id', term)
+			.addOrCondition('name', 'CONTAINS', term)
+			.addOrCondition('table', 'CONTAINS', term);
+		
+		if (options?.scope) {
+			wfGr.addQuery('workflow.sys_scope', options.scope);
+		}
+
+		if (options?.limit) {
+			wfGr.setLimit(options.limit);
+		}
+
+		wfGr.query();
+		while (wfGr.next()) {
+			hits.add(wfGr.getUniqueValue());
+		}
+
+		const wfVersionGr = new GlideRecord('wf_workflow_version');
+		wfVersionGr.addQuery('sys_id', term)
+			.addOrCondition('name', 'CONTAINS', term)
+			.addOrCondition('description', 'CONTAINS', term)
+			.addOrCondition('table', 'CONTAINS', term)
+			.addOrCondition('condition', 'CONTAINS', term);
+
+		if (options?.scope) {
+			wfVersionGr.addQuery('workflow.sys_scope', options.scope);
+		}
+
+		if (options?.limit) {
+			wfVersionGr.setLimit(options.limit);
+		}
+
+		wfVersionGr.addNotNullQuery('workflow');
+		wfVersionGr.addQuery('workflow', 'NOT IN', [...hits]);
+		wfVersionGr.query();		
+		while (wfVersionGr.next()) {
+			hits.add(wfVersionGr.getValue('workflow'));
+		}
+
+		const variableGr = new GlideRecord('sys_variable_value');
+		variableGr.addQuery('document', 'wf_activity');
+		variableGr.addQuery('value', 'CONTAINS', term);
+
+		if (options?.limit) {
+			variableGr.setLimit(options.limit);
+		}
+
+		variableGr.query();
+		while (variableGr.next()) {
+			const wfActivityGr = new GlideRecord('wf_activity');
+			wfActivityGr.addQuery('sys_id', variableGr.document_key);
+			if (options?.scope) {
+				wfActivityGr.addQuery('workflow_version.workflow.sys_scope', options.scope);
+			}
+
+			wfActivityGr.addNotNullQuery('workflow_version.workflow');
+			wfActivityGr.setLimit(1);
+			wfActivityGr.query();
+			if (wfActivityGr.next()) {
+				hits.add(wfActivityGr.workflow_version.workflow.toString());
+			}
+		}
+
+		return [...hits];
+	},
+
+	/**
+	 * Serialize the given record into a JSON.stringify-able data structure
+	 * sutable to be used in a code search.
+	 * 
+	 * @param {GlideRecordGenerated} anyGr
+	 * @param {object} [options]
+	 * @returns {JSON}
+	 */
+	serialize: function (anyGr, options) {
+		const versions = [];
+		const wfVersionGr = new GlideRecord('wf_workflow_version');
+		wfVersionGr.addQuery('workflow', anyGr.sys_id);
+		wfVersionGr.orderBy('order');
+		wfVersionGr.query();
+		while (wfVersionGr.next()) {
+			const wfName = wfVersionGr.getDisplayValue() || wfVersionGr.getUniqueValue();
+			const wfVersion = {
+				name: wfName + (wfVersionGr.published ? ' (current version)' : ' (previous version)'),
+				sys_id: wfVersionGr.getUniqueValue(),
+				activities: []
+			};
+
+			const wfActivityGr = new GlideRecord('wf_activity');
+			wfActivityGr.addQuery('workflow_version', wfVersionGr.sys_id);
+			wfActivityGr.query();
+			while (wfActivityGr.next()) {
+				const activity = {
+					name: 'Activity: ' + wfActivityGr.getDisplayValue() || wfActivityGr.getDisplayValue('activity_definition'),
+					fields: []
+				};
+				const variableGr = new GlideRecord('sys_variable_value');
+				variableGr.addQuery('document', 'wf_activity');
+				variableGr.addQuery('document_key', wfActivityGr.sys_id);
+				variableGr.query();
+				while (variableGr.next()) {
+					activity.fields.push({
+						name: variableGr.getDisplayValue('variable'),
+						value: variableGr.value.toString()
+					});
+				}
+
+				wfVersion.activities.push(activity);
+			}
+
+			versions.push(wfVersion);
+		}
+
+		return {
+			name: anyGr.name.toString(),
+			description: anyGr.description.toString(),
+			versions: versions
+		};
+	},
+
+	type: 'CodeSearchHandlerWorkflow'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-11-29 21:26:54</sys_created_on>
+        <sys_id>d9d82ac1c3a5f2d0de14d8477d013137</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>CodeSearchHandlerWorkflow</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_script_include_d9d82ac1c3a5f2d0de14d8477d013137</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-11-29 21:45:02</sys_updated_on>
+    </sys_script_include>
+</record_update>
