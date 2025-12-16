@@ -18,6 +18,21 @@ Utilities.prototype = {
 	initialize: function () {
 		this.ext = new GlideScriptedExtensionPoint().getExtensions('CodeSearchExt')[0];
 		this.ext.initialize();
+
+		this.use_cache = gs.getProperty('x_itx_codesearch.use_cache') == 'true';
+		if (this.use_cache) {
+			// automatic cache clear when script is updated and the data structure changed
+			this.cache_version = '1';
+			this._checkCache('table_columns');
+		}
+	},
+
+	_checkCache: function (cache) {
+		if (sn_scoped_cache.ScopedCacheManager.get(cache, 'cache_version') != this.cache_version) {
+			sn_scoped_cache.ScopedCacheManager.flushScopedCache(cache);
+			sn_scoped_cache.ScopedCacheManager.put(cache, 'cache_version', this.cache_version);
+			gs.info(`clearing cache ${cache} - upgrading to cache version ${this.cache_version}`);
+		}
 	},
 
 	/**
@@ -30,8 +45,10 @@ Utilities.prototype = {
 
 	/**
 	 * Transform "<target>.<field><operator><value>" to "<field><operator><value>"
-	 * e.g. "flow.descriptionCONTAINShello^flow.annotationCONTAINSworld" to
-	 * "descriptionCONTAINShello^annotationCONTAINSworld"
+	 * while forwarding sys_id and sys_scope conditions.
+	 * 
+	 * e.g. "flow.descriptionCONTAINShello^flow.annotationCONTAINSworld^sys_scope=<scope>^sys_id=<sys_id>" to
+	 * "descriptionCONTAINShello^annotationCONTAINSworld^sys_scope=<scope>^sys_id=<sys_id>"
 	 * 
 	 * @param {string} target
 	 * @param {string} query
@@ -39,14 +56,16 @@ Utilities.prototype = {
 	 */
 	transformRemoteTableQuery: function (target, query) {
 		const targetMatches = target + '=';
-		const targetDotWlk = target + '.';
+		const targetDotWalk = target + '.';
 		return query.split(/(?<!\^)\^EQ/).map(eq => {
 			return eq.split(/(?<!\^)\^NQ/).map(nq => {
 				return nq.split(/(?<!\^)\^OR/).map(or => {
 					return or.split(/(?<!\^)\^/).map(and => {
 						if (and.startsWith(targetMatches)) return and.replace(targetMatches, 'sys_id=');
-						else if (and.startsWith(targetDotWlk)) return and.replace(targetDotWlk, '');
+						else if (and.startsWith(targetDotWalk)) return and.replace(targetDotWalk, '');
 						else if (and.startsWith('sys_id')) return and;
+						else if (and.startsWith('sys_scope')) return and;
+
 						// ignore all other (only data?) conditions parts
 						// currently (due to caching), there is no need
 						// to implement this
@@ -104,92 +123,10 @@ Utilities.prototype = {
 	},
 
 	/**
-	 * Returns the configuration (sys_metadata extension) tables
-	 * which are not covered by the given search group.
-	 * 
-	 * @param {string} searchGroupName
-	 * @returns {string[]}
-	 */
-	getSearchTables: function (searchGroupName) {
-		const ignoredTables = gs.getProperty('x_itx_codesearch.ignored_tables', '')
-			.split(',')
-			.map(x => x.trim())
-			.filter(x => !!x);
-
-		if (!searchGroupName) {
-			return new GlideTableHierarchy('sys_metadata')
-				.getTableExtensions()
-				.filter(t => !ignoredTables.includes(t));			
-		}
-		
-		const rootTables = new Set();
-		const tablePaths = [];
-
-		const searchedTables = [];
-		const tableGr = new GlideRecord('sn_codesearch_table');
-		tableGr.addQuery('search_group.name', searchGroupName);
-		tableGr.query();
-		while (tableGr.next()) {
-			const table = tableGr.table.toString();
-			const hierarchy = new GlideTableHierarchy(table);
-			tablePaths.push(hierarchy.getTables().reverse());
-			rootTables.add(hierarchy.getRoot());
-			searchedTables.push(table);
-		}
-
-		if (rootTables.has('sys_metadata')) {
-			if (rootTables.has('x_itx_codesearch_st_configuration')) {
-				const tree = {
-					sys_metadata: this.getTableTree('sys_metadata')
-				};
-
-				if (rootTables.has('x_itx_codesearch_st_flow')) {
-					tablePaths.push(new GlideTableHierarchy('sys_hub_flow_base').getTables().reverse());
-				}
-
-				if (rootTables.has('x_itx_codesearch_st_flow_action')) {
-					tablePaths.push(new GlideTableHierarchy('sys_hub_action_type_base').getTables().reverse());
-				}
-
-				for (const table of ignoredTables) {
-					tablePaths.push(new GlideTableHierarchy(table).getTables().reverse());
-				}
-
-				// remove the tables already covered 
-				tablePaths.forEach(path => {
-					// walk the branch just before the table
-					let step = tree[path[0]];
-					for (let i = 1; i < path.length - 1 && step; i++) {
-						step = step[path[i]];
-					}
-					
-					if (step) {
-						// remove the table and with it the branch
-						delete step[path.at(-1)];
-					}
-				});
-
-				searchedTables.push(...flatten(tree['sys_metadata']));
-			}
-
-		}
-
-		return searchedTables;
-
-		function flatten(obj, arr = []) {
-			for (const attr in obj) {
-				arr.push(attr, ...flatten(obj[attr]));
-			}
-
-			return arr;
-		}
-	},
-
-	/**
 	 * @param {GlideRecordGenerated} anyGr
 	 * @returns {{ name: string, value: string }[]}
 	 */
-	serializeFields: function (anyGr) {
+	toJSON: function (anyGr) {
 		const fields = [];
 		anyGr.getElements().forEach((element) => {
 			const ge = element.getED();
@@ -209,14 +146,22 @@ Utilities.prototype = {
 					value: this.glideVarFields(element)
 				});
 			} else {
-				fields.push({
+				const value = element.toString();
+				const display = element.getDisplayValue();
+				const field = {
 					name: name,
-					value: element.toString()
-				});
+					value: value
+				};
+
+				if (display != value) {
+					field.display = display;
+				}
+
+				fields.push(field);
 			}
 		});
 
-		return fields;
+		return fields.filter(field => field.value?.length);
 	},
 
 	/**
@@ -227,18 +172,22 @@ Utilities.prototype = {
 		if (value) {
 			const fields = JSON.parse(this.ext.inflate(value));
 			if (Array.isArray(fields)) {
-				return fields.map(field => {
-					return {
-						name: field.name,
-						value: field.value,
-						scriptActive: field.scriptActive,
-						scripts: field.script
-					};
-				});
+				return fields
+					.filter(field => field.value || (field.scriptActive && field.script))
+					.map(field => {
+						return {
+							name: field.name,
+							value: field.value,
+							scriptActive: field.scriptActive,
+							script: field.script
+						};
+					});
 			}
 
 			// simple Object.<string, string>
-			return Object.entries(fields).map(([name, value]) => { return { name, value }; });
+			return Object.entries(fields)
+				.filter(([name, value]) => value)
+				.map(([name, value]) => { return { name, value }; });
 		}
 
 		return [];
@@ -252,11 +201,20 @@ Utilities.prototype = {
 		const values = [];
 		for (const name in glideElement) {
 			if (name == 'sys_id' || name == 'sys_meta') continue;
+			const value = String(glideElement[name]);
+			if (!value) continue;
 
-			values.push({
+			const display = glideElement[name].getDisplayValue();
+			const field = {
 				name: name,
-				value: String(glideElement[name])
-			});
+				value: value
+			};
+
+			if (display != value) {
+				field.display = display;
+			}
+
+			values.push(field);
 		}
 
 		return values;
@@ -268,13 +226,13 @@ Utilities.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 18:32:17</sys_created_on>
         <sys_id>64f1e54dc3e5b2d0de14d8477d0131d0</sys_id>
-        <sys_mod_count>2</sys_mod_count>
+        <sys_mod_count>16</sys_mod_count>
         <sys_name>Utilities</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_64f1e54dc3e5b2d0de14d8477d0131d0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-29 21:53:04</sys_updated_on>
+        <sys_updated_on>2025-12-16 18:23:09</sys_updated_on>
     </sys_script_include>
 </record_update>

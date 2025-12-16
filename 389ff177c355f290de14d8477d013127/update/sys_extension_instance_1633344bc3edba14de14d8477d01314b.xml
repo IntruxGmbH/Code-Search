@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_extension_instance">
     <sys_extension_instance action="INSERT_OR_UPDATE">
         <active>true</active>
-        <order>900</order>
+        <order>100</order>
         <point>x_itx_codesearch.CodeSearchHandler</point>
-        <script_include display_value="CodeSearchHandlerMetadata">adf99770c3ad32d0de14d8477d0131a9</script_include>
+        <script_include display_value="CodeSearchHandlerAny">8e33344bc3edba14de14d8477d013145</script_include>
         <sys_class_name>sys_extension_instance</sys_class_name>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
-        <sys_created_on>2025-11-29 06:23:05</sys_created_on>
-        <sys_id>f5f99770c3ad32d0de14d8477d0131af</sys_id>
-        <sys_mod_count>2</sys_mod_count>
+        <sys_created_on>2025-12-05 18:00:54</sys_created_on>
+        <sys_id>1633344bc3edba14de14d8477d01314b</sys_id>
+        <sys_mod_count>0</sys_mod_count>
         <sys_name>x_itx_codesearch.CodeSearchHandler</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
-        <sys_update_name>sys_extension_instance_f5f99770c3ad32d0de14d8477d0131af</sys_update_name>
+        <sys_update_name>sys_extension_instance_1633344bc3edba14de14d8477d01314b</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-05 18:00:44</sys_updated_on>
+        <sys_updated_on>2025-12-05 18:00:54</sys_updated_on>
     </sys_extension_instance>
 </record_update>

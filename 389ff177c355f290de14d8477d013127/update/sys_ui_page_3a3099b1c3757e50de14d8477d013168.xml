@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script><![CDATA[/* global document, AJAXTableCompleter */
+/* eslint no-undef: "error" */
+(function () {
+	var tableInput = document.getElementById('sys_display.table');
+	var description = document.getElementById('searchgroup-description');
+	document.querySelector('select#searchgroup').addEventListener('change', function () {
+		description.innerText = this.selectedOptions[0].dataset.description || '';
+		description.style.marginTop = description.innerText ? '1rem' : '';
+		var visibleContainerId = 'table-' + this.selectedOptions[0].value + '-container';
+		document.querySelectorAll('#table-select-container .table-container').forEach(function (container) {
+			if (container.id == visibleContainerId) {
+				container.style.display = '';
+			} else {
+				container.style.display = 'none';
+			}
+		});
+	});
+})();]]></client_script>
+        <description/>
+        <direct>false</direct>
+        <endpoint>x_itx_codesearch_search.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+
+	<!--
+		Credit to OOTB Code Search App
+		CodeSearchExampleUse: /nav_to.do?uri=sys_ui_page.do?sys_id=8bc77fb2d7120200b6bddb0c825203ac
+		CodeSearchExample: /nav_to.do?uri=sys_ui_macro.do?sys_id=9a7abeb2d7120200b6bddb0c82520308
+	-->
+	<g:requires name="styles/heisenberg/heisenberg_all.css" includes="true" />
+	<g:requires name="scripts/lib/jquery_includes.js" />
+	<g:requires name="scripts/heisenberg/heisenberg_all.js" />
+
+	<g:evaluate>
+		const tables = {};
+		const searchTableGr = new GlideRecord('sn_codesearch_table');
+		searchTableGr.addNotNullQuery('search_group');
+		searchTableGr.orderBy('table');
+		searchTableGr.query();
+		while (searchTableGr.next()) {
+			const group = searchTableGr.search_group.name.toString();
+			(tables[group] ??= []).push(searchTableGr.table.toString());
+		}
+	</g:evaluate>
+	
+	<style>
+		form {
+			width: 600px;
+			margin: 20px auto 30px auto;
+			border: 1px solid rgba(0,0,0,0.2);
+			padding: 35px;
+			box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+			border-radius: 3px;
+		}
+		
+		label {
+			padding-top: 7px;
+		}
+		
+		.col-sm-9 {
+			padding-left: inherit;
+			padding-right: inherit;
+		}
+		
+		.footer-buttons {
+			display: block;
+			text-align: right;
+		} 
+		
+		#sn_codesearch_results {
+			padding: 20px 40px;
+			border-top: 1px solid #e8e8e8;
+		}
+	</style>
+
+	<g:ui_form>
+		<fieldset>
+			<div class="row form-group">
+				<label class="col-sm-3 control-label" for="searchgroup">Search Group</label>
+
+				<span class="col-sm-9">
+					<select id="searchgroup" class="form-control" name="group">
+						<g:evaluate>
+							const searchGroupGr = new GlideRecord('sn_codesearch_search_group');
+							searchGroupGr.orderByDesc('sys_created_on');
+							searchGroupGr.query();
+						</g:evaluate>
+							<option value="none">-- None --</option>
+						<j:while test="${searchGroupGr.next()}">
+							<option value="${searchGroupGr.name}" data-description="${searchGroupGr.description}">
+								${searchGroupGr.name}
+							</option>
+						</j:while>
+					</select>
+					<p id="searchgroup-description"></p>
+				</span>
+			</div>
+
+			<div class="row form-group" id="table-select-container">
+				<label class="col-sm-3 control-label" for="search-table">Search Table</label>
+				<span class="col-sm-9">
+					<div class="table-container" id="table-none-container">
+						<g:ui_reference name="table-none" table="sys_db_object" columns="label,name,sys_scope" order_by="name" />
+					</div>
+
+					<g:evaluate>
+						searchGroupGr.query();
+					</g:evaluate>
+					<j:while test="${searchGroupGr.next()}">
+						<div class="table-container" id="table-${searchGroupGr.name}-container" style="display:none">
+							<g:ui_reference name="table-${searchGroupGr.name}"
+								table="sys_db_object" columns="label,name,sys_scope" order_by="name"
+								query="nameIN${tables[searchGroupGr.name].join(',')}" />
+						</div>
+					</j:while>
+				</span>
+			</div>
+
+			<div class="row form-group">
+				<label for="term" class="control-label col-sm-3">Term</label>
+				<span class="col-sm-9 form-field">
+					<input id="term" class="form-control" type="text" placeholder="Type a term" name="term" />
+				</span>
+			</div>
+
+			<div class="row form-group">
+				<label class="col-sm-3 control-label" for="scope">Scope</label>
+
+				<span class="col-sm-9">
+					<g:evaluate>
+						const scopeGr = new GlideRecord('sys_scope');
+						scopeGr.addQuery('sys_id', gs.getCurrentApplicationId());
+						scopeGr.setLimit(1);
+						scopeGr.query();
+						scopeGr.next();
+					</g:evaluate>
+					<g:ui_reference name="scope" table="sys_scope" columns="name,scope" order_by="name" value="${scopeGr.sys_id}" displayValue="${scopeGr.name}" />
+				</span>
+			</div>		
+		</fieldset>
+		
+		<!-- the sn_codesearch_getResults and sn_codesearch_clearSelections function definitions are in the UI Page CodeSearchExampleUse -->
+		<div class="footer-buttons">
+			<g:dialog_buttons_ok_cancel ok="return sn_codesearch_getResults()" ok_id="ok_button" cancel_type="button" cancel="sn_codesearch_clearSelections()" />
+		</div>
+	</g:ui_form>
+	<div id="sn_codesearch_results">
+	</div>
+
+</j:jelly>]]></html>
+        <name>search</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-12-14 11:48:12</sys_created_on>
+        <sys_id>3a3099b1c3757e50de14d8477d013168</sys_id>
+        <sys_mod_count>32</sys_mod_count>
+        <sys_name>search</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_ui_page_3a3099b1c3757e50de14d8477d013168</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-12-14 20:12:54</sys_updated_on>
+    </sys_ui_page>
+</record_update>

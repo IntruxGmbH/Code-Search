@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_itx_codesearch.CodeSearchHandlerAny</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>Implements extension point x_itx_codesearch.CodeSearchHandler&#13;
+&#13;
+The OOTB code search expects the sys_class_name field to be present on the searched table. If this is not the case, the table will not be searched at all.&#13;
+Adding the 'CodeSearch Proxy' table will pick up all the tables which do not have this field which will be covered by this handler.</description>
+        <mobile_callable>false</mobile_callable>
+        <name>CodeSearchHandlerAny</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* global Set */
+/* global gs, x_itx_codesearch */
+/* global Class, GlideRecord, GlideTableHierarchy, GlideScopedEvaluator */
+/* eslint no-undef: "error" */
+var CodeSearchHandlerAny = Class.create();
+CodeSearchHandlerAny.prototype = {
+	initialize: function () {
+		this.util = new x_itx_codesearch.Utilities();
+
+		const scriptGr = new GlideRecord('clone_cleanup_script');
+		scriptGr.addQuery('sys_scope', 'global');
+		scriptGr.setLimit(1);
+		scriptGr.query();
+		if (scriptGr.next()) {
+			this.scriptGr = scriptGr;
+		} else {
+			throw new Error('No infuseable script found');
+		}
+	},
+
+	/**
+	 * the proxy search handler will handle all tables which are 
+	 * 
+	 * @static
+	 * @param {object} [context]
+	 * @param {string} [context.scope]
+	 * @param {string} [context.table]
+	 * @param {string} [context.group]
+	 * @returns {string[]}
+	 */
+	getHandledTables: function (context) {
+		if (context?.table) {
+			return [context.table];
+		}
+
+		const tables = [];
+		if (context?.group) {
+			// Note: The scope parameter is ignored because this parameter is only applicable for
+			// metadata files - which are handled by CodeSearchHandlerMetadata
+			const tableGr = new GlideRecord('sn_codesearch_table');
+			tableGr.addQuery('search_group', context.group);
+			tableGr.query();
+			while (tableGr.next()) {
+				const table = tableGr.table.toString();
+				if (!hasClassName(table)) {
+					tables.push(table);
+				}
+			}
+		}
+		
+		return tables;
+
+		function hasClassName(table) {
+			const dictGr = new GlideRecord('sys_dictionary');
+			dictGr.addQuery('element', 'sys_class_name');
+			// theoretically it should be enough to look for sys_class_name on the base table
+			dictGr.addQuery('name', 'IN', new GlideTableHierarchy(table).getTables());
+			dictGr.setLimit(1);
+			dictGr.query();
+			return dictGr.hasNext();
+		}
+	},
+
+	/**
+	 * returning true always as this handler can search all tables (extension 
+	 * point order will ensure this is the last to be called)
+	 * 
+	 * @param {string} table
+	 * @return {boolean}
+	 */
+	handlesTable: function (table) {
+		return true;
+	},
+
+	/**
+	 * get the SysIDs of records that match the record
+	 * 
+	 * @param {string} table
+	 * @param {string} term
+	 * @param {object} [options]
+	 * @param {object} [options.scope]
+ 	 * @param {number} [options.limit]
+	 * @param {string[]} [options.fields]
+	 * @returns {string[]}
+	 */
+	search: function (table, term, options) {
+		const fields = [];
+		const variableFields = [];
+		(options?.fields || this.util.getTableFields(table)).forEach(field => {
+			if (field.type == 'glide_var' || field.type == 'variables') {
+				variableFields.push(field);
+			} else {
+				fields.push(field.name);
+			}
+		});
+
+		this.scriptGr.script = `(function (table, fields, term, limit) {
+		var anyGr = new GlideRecord(table);
+		var cond = anyGr.addQuery('sys_id', term);
+		fields.forEach(function (field) {
+			cond.addOrCondition(field, 'CONTAINS', term);
+		});
+		
+		if (limit) {
+			anyGr.setLimit(limit);
+		}
+		
+		anyGr.query();
+
+		var hits = [];
+		while (anyGr.next()) {
+			hits.push(anyGr.getUniqueValue());
+		}
+
+		return hits;
+		})(table, JSON.parse(fields), term, limit);`;
+		const hits = new Set(new GlideScopedEvaluator().evaluateScript(this.scriptGr, 'script', {
+			table: table,
+			fields: JSON.stringify(fields),
+			term: term,
+			limit: options?.limit || 0
+		}));
+
+		// Related List Query on sys_variable_value did not seem to work reliable,
+		// so we do the lookup in a dedicated query
+		if (variableFields.length) {
+			const variableGr = new GlideRecord('sys_variable_value');
+			variableGr.addQuery('document', table);
+			variableGr.addQuery('document_key', 'NOT IN', [...hits]);
+			variableGr.addNotNullQuery('document_key');
+			variableGr.addQuery('value', 'CONTAINS', term);
+			variableGr.addJoinQuery(table, 'document_key', 'sys_id');
+			variableGr.query();
+			while (variableGr.next()) {
+				hits.add(variableGr.getValue('document_key'));
+			}
+		}
+
+		return [...hits];
+	},
+
+	/**
+	 * Convert the given record to JSON data structure suitable to be used in a code search.
+	 * 
+	 * @param {GlideRecordGenerated} anyGr
+	 * @param {object} options
+	 * @returns {JSON}
+	 */
+	toJSON: function (anyGr, options) {
+		return {
+			sys_class_name: anyGr.getRecordClassName(),
+			sys_id: anyGr.getUniqueValue(),
+			sys_scope: anyGr.getValue('sys_scope'),
+			fields: this.util.toJSON(anyGr)
+		};
+	},
+
+	batchToJSON: function (table, sysIDs) {
+		this.scriptGr.script = `(function (self, table, sysIDs) {
+		var anyGr = new GlideRecord(table);
+		anyGr.addQuery('sys_id', 'IN', sysIDs);
+		anyGr.query();
+
+		var records = [];
+		while (anyGr.next()) {
+			records.push(self.toJSON(anyGr));
+		}
+
+		return records;
+		})(self, table, sysIDs);`;
+		const gse = new GlideScopedEvaluator();
+		gse.putVariable('self', this);
+		return gse.evaluateScript(this.scriptGr, 'script', {
+			table: table,
+			sysIDs: sysIDs
+		});
+	},
+
+	type: 'CodeSearchHandlerAny'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-12-05 18:00:53</sys_created_on>
+        <sys_id>8e33344bc3edba14de14d8477d013145</sys_id>
+        <sys_mod_count>36</sys_mod_count>
+        <sys_name>CodeSearchHandlerAny</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_script_include_8e33344bc3edba14de14d8477d013145</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-12-16 19:58:38</sys_updated_on>
+    </sys_script_include>
+</record_update>

@@ -1,13 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_extension_point">
     <sys_extension_point action="INSERT_OR_UPDATE">
         <api_name>x_itx_codesearch.CodeSearchHandler</api_name>
-        <description/>
+        <description>A CodeSearchHandler must be able to search in a table for which it returned true when asked via "handlesTable". In addition, the handler must be able to serialize the record.&#13;
+All operations must be possible without creating new cross scope records.</description>
         <example><![CDATA[/* global gs */
 /* global Class, GlideRecord */
 /* eslint no-undef: "error" */
 var CodeSearchHandler = Class.create();
 CodeSearchHandler.prototype = {
 	initialize: function () {
+
+	},
+
+	/**
+	 * tables this handler can search and serialize
+	 * 
+	 * @static
+	 * @param {object} [context]
+	 * @param {string} [context.scope]
+	 * @returns {string[]}
+	 */
+	getHandledTables: function (context) {
+		throw new Error('not implemented');
 	},
 
 	/**
@@ -35,14 +49,13 @@ CodeSearchHandler.prototype = {
 	},
 
 	/**
-	 * Serialize the given record into a JSON.stringify-able data structure
-	 * sutable to be used in a code search.
+	 * Convert the given record to JSON data structure suitable to be used in a code search.
 	 * 
 	 * @param {GlideRecordGenerated} anyGr
-	 * @param {object} [options]
+	 * @param {object} options
 	 * @returns {JSON}
 	 */
-	serialize: function (anyGr, options) {
+	toJSON: function (anyGr, options) {
 		throw new Error('not implemented');
 	},
 
@@ -54,13 +67,13 @@ CodeSearchHandler.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 06:22:35</sys_created_on>
         <sys_id>a06997fcc36d32d0de14d8477d0131cb</sys_id>
-        <sys_mod_count>4</sys_mod_count>
+        <sys_mod_count>12</sys_mod_count>
         <sys_name>CodeSearchHandler</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_extension_point_a06997fcc36d32d0de14d8477d0131cb</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-29 21:29:55</sys_updated_on>
+        <sys_updated_on>2025-12-16 18:01:00</sys_updated_on>
     </sys_extension_point>
 </record_update>

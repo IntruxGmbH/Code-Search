@@ -27,8 +27,11 @@ CodeSearchUtilClient.prototype = Object.extendsObject(global.AbstractAjaxProcess
 			worker.setScriptIncludeName('x_itx_codesearch.CodeSearchWorker');
 			worker.setScriptIncludeMethod('search');
 			worker.putMethodArg('term', term);
-			worker.putMethodArg('scope', this.getParameter('scope'));
-			worker.putMethodArg('searchGroup', this.getParameter('search_group'));
+			worker.putMethodArg('context', {
+				table: this.getParameter('table'),
+				scope: this.getParameter('scope'),
+				group: this.getParameter('group')
+			});
 			worker.setBackground(true);
 			worker.start();
 
@@ -48,13 +51,13 @@ CodeSearchUtilClient.prototype = Object.extendsObject(global.AbstractAjaxProcess
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-28 23:18:46</sys_created_on>
         <sys_id>a357f9fcc3a9fe90de14d8477d0131a0</sys_id>
-        <sys_mod_count>3</sys_mod_count>
+        <sys_mod_count>5</sys_mod_count>
         <sys_name>CodeSearchUtilClient</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_a357f9fcc3a9fe90de14d8477d0131a0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-29 18:35:36</sys_updated_on>
+        <sys_updated_on>2025-12-16 18:25:47</sys_updated_on>
     </sys_script_include>
 </record_update>

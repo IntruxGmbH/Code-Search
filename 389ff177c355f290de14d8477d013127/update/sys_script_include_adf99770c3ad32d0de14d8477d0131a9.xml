@@ -2,19 +2,19 @@
     <sys_script_include action="INSERT_OR_UPDATE">
         <access>package_private</access>
         <active>true</active>
-        <api_name>x_itx_codesearch.CodeSearchHandlerGeneral</api_name>
+        <api_name>x_itx_codesearch.CodeSearchHandlerMetadata</api_name>
         <caller_access/>
         <client_callable>false</client_callable>
         <description>Implements extension point x_itx_codesearch.CodeSearchHandler</description>
         <mobile_callable>false</mobile_callable>
-        <name>CodeSearchHandlerGeneral</name>
+        <name>CodeSearchHandlerMetadata</name>
         <sandbox_callable>false</sandbox_callable>
         <script><![CDATA[/* global Set */
 /* global gs, sn_scoped_cache, x_itx_codesearch */
-/* global Class, GlideRecord, GlideTableHierarchy */
+/* global Class, GlideRecord, GlideAggregate, GlideTableHierarchy */
 /* eslint no-undef: "error" */
-var CodeSearchHandlerGeneral = Class.create();
-CodeSearchHandlerGeneral.prototype = {
+var CodeSearchHandlerMetadata = Class.create();
+CodeSearchHandlerMetadata.prototype = {
 	initialize: function () {
 		this.util = new x_itx_codesearch.Utilities();
 
@@ -35,12 +35,120 @@ CodeSearchHandlerGeneral.prototype = {
 	},
 
 	/**
+	 * tables this handler can search and serialize
+	 * 
+	 * @static
+	 * @param {object} [context]
+	 * @param {string} [context.scope]
+	 * @returns {string[]}
+	 */
+	getHandledTables: function (context) {
+		if (context?.table) {
+			if (new GlideTableHierarchy(context.table).getRoot() == 'sys_metadata') {
+				return [context.table];
+			}
+
+			return [];
+		}
+
+		const ignoredTables = gs.getProperty('x_itx_codesearch.ignored_tables', '')
+			.split(',')
+			.map(x => x.trim())
+			.filter(x => !!x);
+
+		const rootTables = new Set();
+		const tablePaths = []; // each table's inheritance from root to table
+		const searchedTables = [];
+		if (context?.group) {
+			// a group is considered an override to this handler:
+			// any application file table (and its child tables) will *not* be searched
+			// by this handler - the OOTB sn_codesearch.CodeSearch Script Include
+			// will search the table instead
+			const tableGr = new GlideRecord('sn_codesearch_table');
+			tableGr.addQuery('search_group', context.group);
+			tableGr.query();
+			while (tableGr.next()) {
+				const table = tableGr.table.toString();
+				if (table == 'x_itx_codesearch_st_metadata') {
+					rootTables.push('x_itx_codesearch_st_metadata');
+				} else {
+					const hierarchy = new GlideTableHierarchy(table);
+					const root = hierarchy.getRoot();
+					if (root == 'sys_metadata') {
+						tablePaths.push(hierarchy.getTables().reverse());
+						rootTables.add(hierarchy.getRoot());
+					}
+				}
+			}
+
+			const util = new x_itx_codesearch.Utilities();
+			const tree = {
+				sys_metadata: util.getTableTree('sys_metadata')
+			};
+
+			// add the ignored tables as well so that they can be removed from the tree
+			for (const table of ignoredTables) {
+				tablePaths.push(new GlideTableHierarchy(table).getTables().reverse());
+			}
+
+			// remove the tables already covered from the tree
+			tablePaths.forEach(path => {
+				// walk the branch just before the table
+				let step = tree[path[0]];
+				for (let i = 1; i < path.length - 1 && step; i++) {
+					step = step[path[i]];
+				}
+				
+				if (step) {
+					// remove the table and with it the branch
+					delete step[path.at(-1)];
+				}
+			});
+
+			searchedTables.push(...flatten(tree['sys_metadata']));
+		}
+
+		if (context?.scope) {
+			const ga = new GlideAggregate('sys_metadata');
+			ga.addQuery('sys_scope', context.scope);
+			ga.groupBy('sys_class_name');
+			ga.query();
+
+			const tables = [];
+			while (ga.next()) {
+				tables.push(ga.getValue('sys_class_name'));
+			}
+
+			if (searchedTables.length) {
+				// search group is defined
+				return tables.filter(t => searchedTables.includes(t));
+			} 
+
+			return tables.filter(t => !ignoredTables.includes(t));
+		}
+
+		// neither table, group or scope defined
+		return new GlideTableHierarchy('sys_metadata')
+			.getAllExtensions()
+			.filter(t => !ignoredTables.includes(t));
+
+		function flatten(obj, arr = []) {
+			for (const attr in obj) {
+				arr.push(attr, ...flatten(obj[attr]));
+			}
+
+			return arr;
+		}
+	},
+
+	/**
 	 * test if this extensionpoint can handle the given table
-	 * @param {string} tableName
+	 * 
+	 * @param {string} table
 	 * @return {boolean}
 	 */
-	handlesTable: function (tableName) {
-		return new GlideTableHierarchy(tableName).getRoot() == 'sys_metadata';
+	handlesTable: function (table) {
+		return new GlideTableHierarchy(table).getRoot() == 'sys_metadata';
 	},
 
 	/**
@@ -120,14 +228,13 @@ CodeSearchHandlerGeneral.prototype = {
 	},
 
 	/**
-	 * Serialize the given record into a JSON.stringify-able data structure
-	 * sutable to be used in a code search.
+	 * Convert the given record to JSON data structure suitable to be used in a code search.
 	 * 
 	 * @param {GlideRecordGenerated} anyGr
 	 * @param {object} options
 	 * @returns {JSON}
 	 */
-	serialize: function (anyGr, options) {
+	toJSON: function (anyGr, options) {
 		const sysId = anyGr.getUniqueValue();
 		if (this.use_cache) {
 			const data = sn_scoped_cache.ScopedCacheManager.get('metadata_json_data', sysId);
@@ -139,26 +246,26 @@ CodeSearchHandlerGeneral.prototype = {
 		const data = {
 			'class': anyGr.getRecordClassName(),
 			sys_id: anyGr.getUniqueValue(),
-			field: this.util.serializeFields(anyGr)
+			field: this.util.toJSON(anyGr)
 		};
 
 		sn_scoped_cache.ScopedCacheManager.putRow('metadata_json_data', sysId, JSON.stringify(data), sysId);
 		return data;
 	},
 
-	type: 'CodeSearchHandlerGeneral'
+	type: 'CodeSearchHandlerMetadata'
 };]]></script>
         <sys_class_name>sys_script_include</sys_class_name>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 06:23:04</sys_created_on>
         <sys_id>adf99770c3ad32d0de14d8477d0131a9</sys_id>
-        <sys_mod_count>11</sys_mod_count>
-        <sys_name>CodeSearchHandlerGeneral</sys_name>
+        <sys_mod_count>20</sys_mod_count>
+        <sys_name>CodeSearchHandlerMetadata</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_adf99770c3ad32d0de14d8477d0131a9</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-30 18:31:40</sys_updated_on>
+        <sys_updated_on>2025-12-16 18:05:08</sys_updated_on>
     </sys_script_include>
 </record_update>

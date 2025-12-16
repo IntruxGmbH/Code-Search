@@ -33,6 +33,28 @@ CodeSearchHandlerFlowAction.prototype = {
 	},
 
 	/**
+	 * tables this handler is search and serialize
+	 * 
+	 * @static
+	 * @param {object} [context]
+	 * @param {string} [context.scope]
+	 * @returns {string[]}
+	 */
+	getHandledTables: function (context) {
+		if (context?.scope) {
+			const actionGr = new GlideRecord('sys_hub_action_type_definition');
+			actionGr.addQuery('sys_scope', context.scope);
+			actionGr.setLimit(1);
+			actionGr.query();
+			if (!actionGr.hasNext()) {
+				return [];
+			}
+		}
+
+		return ['sys_hub_action_type_definition'];
+	},
+
+	/**
 	 * test if this extensionpoint can search and serialize the given table
 	 * 
 	 * @param {string} table
@@ -55,7 +77,7 @@ CodeSearchHandlerFlowAction.prototype = {
 		const actionGr = new GlideRecord('x_itx_codesearch_st_flow_action');
 		actionGr.addQuery('data', 'CONTAINS', term);
 		if (options?.scope) {
-			actionGr.addQuery('sys_class_name', options.scope);
+			actionGr.addQuery('sys_scope', options.scope);
 		}
 
 		if (options?.limit) {
@@ -73,13 +95,13 @@ CodeSearchHandlerFlowAction.prototype = {
 
 	/**
 	 * Serialize the given record into a JSON.stringify-able data structure
-	 * sutable to be used in a code search.
+	 * suitable to be used in a code search.
 	 * 
 	 * @param {GlideRecordGenerated & sys_hub_action_type_definition} anyGr
 	 * @param {object} [options]
 	 * @returns {JSON}
 	 */
-	serialize: function (actionGr, options) {
+	toJSON: function (actionGr, options) {
 		const actionSysId = actionGr.getUniqueValue();
 		if (this.use_cache) {
 			const data = sn_scoped_cache.ScopedCacheManager.get('flow_action_json_data', actionSysId);
@@ -98,7 +120,7 @@ CodeSearchHandlerFlowAction.prototype = {
 			steps.push({
 				label: `Step ${order}`,
 				order: order,
-				fields: this.util.serializeFields(stepGr)
+				fields: this.util.toJSON(stepGr)
 			});
 		}
 
@@ -121,13 +143,13 @@ CodeSearchHandlerFlowAction.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 20:14:54</sys_created_on>
         <sys_id>fa589ac1c3a1f2d0de14d8477d0131bd</sys_id>
-        <sys_mod_count>1</sys_mod_count>
+        <sys_mod_count>11</sys_mod_count>
         <sys_name>CodeSearchHandlerFlowAction</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_fa589ac1c3a1f2d0de14d8477d0131bd</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-29 20:19:29</sys_updated_on>
+        <sys_updated_on>2025-12-16 18:20:29</sys_updated_on>
     </sys_script_include>
 </record_update>

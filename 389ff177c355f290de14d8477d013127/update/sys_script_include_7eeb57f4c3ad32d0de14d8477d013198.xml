@@ -20,6 +20,28 @@ CodeSearchHandlerForm.prototype = {
 	},
 
 	/**
+	 * tables this handler can search and serialize
+	 * 
+	 * @static
+	 * @param {object} [context]
+	 * @param {string} [context.scope]
+	 * @returns {string[]}
+	 */
+	getHandledTables: function (context) {
+		if (context?.scope) {
+			const uiSectionGr = new GlideRecord('sys_ui_section');
+			uiSectionGr.addQuery('sys_scope', context.scope);
+			uiSectionGr.setLimit(1);
+			uiSectionGr.query();
+			if (!uiSectionGr.hasNext()) {
+				return [];
+			}
+		}
+
+		return ['sys_ui_section'];
+	},
+
+	/**
 	 * test if this extensionpoint can handle the given table
 	 * 
 	 * @param {string} tableName
@@ -129,14 +151,13 @@ CodeSearchHandlerForm.prototype = {
 	},
 
 	/**
-	 * Serialize the given record into a JSON.stringify-able data structure
-	 * sutable to be used in a code search.
+	 * Convert the given record to JSON data structure suitable to be used in a code search.
 	 * 
 	 * @param {GlideRecordGenerated & sys_ui_section} uiSectionGr
-	 * @param {object} [options]
+	 * @param {object} options
 	 * @returns {JSON}
 	 */
-	serialize: function (uiSectionGr, options) {
+	toJSON: function (uiSectionGr, options) {
 		const elements = [];
 		const uiElementGr = new GlideRecord('sys_ui_element');
 		uiElementGr.addQuery('sys_ui_section', uiSectionGr.sys_id);
@@ -181,13 +202,13 @@ CodeSearchHandlerForm.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 06:31:36</sys_created_on>
         <sys_id>7eeb57f4c3ad32d0de14d8477d013198</sys_id>
-        <sys_mod_count>3</sys_mod_count>
+        <sys_mod_count>11</sys_mod_count>
         <sys_name>CodeSearchHandlerForm</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_7eeb57f4c3ad32d0de14d8477d013198</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-29 20:47:54</sys_updated_on>
+        <sys_updated_on>2025-12-16 18:01:56</sys_updated_on>
     </sys_script_include>
 </record_update>

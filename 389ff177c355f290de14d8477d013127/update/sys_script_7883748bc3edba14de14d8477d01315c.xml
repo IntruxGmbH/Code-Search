@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_script">
+    <sys_script action="INSERT_OR_UPDATE">
+        <abort_action>false</abort_action>
+        <access>package_private</access>
+        <action_delete>false</action_delete>
+        <action_insert>false</action_insert>
+        <action_query>false</action_query>
+        <action_update>false</action_update>
+        <active>true</active>
+        <add_message>false</add_message>
+        <advanced>true</advanced>
+        <change_fields>false</change_fields>
+        <client_callable>false</client_callable>
+        <collection>sn_codesearch_table</collection>
+        <condition/>
+        <description/>
+        <execute_function>false</execute_function>
+        <filter_condition/>
+        <is_rest>false</is_rest>
+        <message/>
+        <name>ITX Code Search - sys_class_name check</name>
+        <order>100</order>
+        <priority>100</priority>
+        <rest_method/>
+        <rest_method_text/>
+        <rest_service/>
+        <rest_service_text/>
+        <rest_variables/>
+        <role_conditions/>
+        <script><![CDATA[(function executeRule(current, previous /*null when async*/) {
+
+	if (current.isNewRecord()) {
+		gs.addInfoMessage('Note: The selected table *must* have a sys_class_name field present to be searchable');
+	} else {
+		const dictGr = new GlideRecord('sys_dictionary');
+		dictGr.addQuery('element', 'sys_class_name');
+		dictGr.addQuery('name', 'IN', new GlideTableHierarchy(current.table).getTables());
+		dictGr.setLimit(1);
+		dictGr.query();
+		if (!dictGr.hasNext()) {
+			const tableGr = new GlideRecord('sn_code_search_table');
+			tableGr.addQuery('table', 'x_itx_codesearch_st_proxy');
+			tableGr.addQuery('search_group', current.search_group);
+			tableGr.setLimit(1);
+			tableGr.query();
+			if (tableGr.hasNext()) {
+				gs.addInfoMessage('Table does not have a sys_class_name field, but the Intrux Code Search Proxy in this Search Group will redirect the search');
+			} else {
+				gs.addErrorMessage(`Table does not have a sys_class_name field. Add the 'CodeSearch Proxy' table to this search group to enable code search capabilities`);
+			}
+		}
+	}
+
+})(current, previous);]]></script>
+        <sys_class_name>sys_script</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-12-05 18:20:25</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>7883748bc3edba14de14d8477d01315c</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>ITX Code Search - sys_class_name check</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_script_7883748bc3edba14de14d8477d01315c</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-12-05 18:20:25</sys_updated_on>
+        <template/>
+        <when>before_display</when>
+    </sys_script>
+    <sys_translated_text action="delete_multiple" query="documentkey=7883748bc3edba14de14d8477d01315c"/>
+</record_update>
