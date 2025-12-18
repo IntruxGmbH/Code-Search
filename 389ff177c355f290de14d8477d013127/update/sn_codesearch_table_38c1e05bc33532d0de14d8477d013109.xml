@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sn_codesearch_table">
+    <sn_codesearch_table action="INSERT_OR_UPDATE">
+        <additional_filter/>
+        <search_fields>data</search_fields>
+        <search_group display_value="sn_codesearch.Default Search Group">9a44f352d7120200b6bddb0c82520376</search_group>
+        <sys_class_name>sn_codesearch_table</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2025-12-18 21:38:46</sys_created_on>
+        <sys_id>38c1e05bc33532d0de14d8477d013109</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>x_itx_codesearch_st_flow</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sn_codesearch_table_38c1e05bc33532d0de14d8477d013109</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2025-12-18 21:38:46</sys_updated_on>
+        <table>x_itx_codesearch_st_flow</table>
+    </sn_codesearch_table>
+</record_update>

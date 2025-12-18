@@ -70,7 +70,7 @@ CodeSearchHandlerMetadata.prototype = {
 			while (tableGr.next()) {
 				const table = tableGr.table.toString();
 				if (table == 'x_itx_codesearch_st_metadata') {
-					rootTables.push('x_itx_codesearch_st_metadata');
+					rootTables.add('x_itx_codesearch_st_metadata');
 				} else {
 					const hierarchy = new GlideTableHierarchy(table);
 					const root = hierarchy.getRoot();
@@ -158,18 +158,14 @@ CodeSearchHandlerMetadata.prototype = {
 	 * @returns {string[]}
 	 */
 	search: function (table, term, options) {
-		const queryParts = [];
+		const fields = [];
 		const variableFields = [];
 		this.util.getTableFields(table).forEach(field => {
 			if (field.type == 'glide_var' || field.type == 'variables') {
 				variableFields.push(field);
-			} else {
-				const base = 'ref_' + table + '.' + field.name;
-				if (field.name == 'sys_id') {
-					queryParts.push(base + '=' + term);
-				} else {
-					queryParts.push(base + 'LIKE' + term);
-				}
+			} else if (field.name != 'sys_id') {
+				// lookup is done via ref_ to no generate cross scope privileges
+				fields.push('ref_' + table + '.' + field.name);
 			}
 		});
 
@@ -182,7 +178,8 @@ CodeSearchHandlerMetadata.prototype = {
 			metadataGr.addQuery('sys_scope', options.scope);
 		}
 
-		metadataGr.addEncodedQuery(queryParts.join('^OR'));
+		const cond = metadataGr.addQuery('sys_id', term);
+		fields.forEach(field => cond.addOrCondition(field, 'CONTAINS', term));
 
 		if (options?.limit) {
 			metadataGr.setLimit(options.limit);
@@ -211,8 +208,12 @@ CodeSearchHandlerMetadata.prototype = {
 
 				const metadataGr = new GlideRecord('sys_metadata');
 				metadataGr.addQuery('sys_scope', options.scope);
-				metadataGr.addQuery('sys_id', 'IN', [...variableFields]);
-				metadataGr.setLimit(this.limit);
+				metadataGr.addQuery('sys_id', 'IN', [...variableHits]);
+
+				if (options.limit) {
+					metadataGr.setLimit(options.limit);
+				}
+
 				metadataGr.query();
 				while (metadataGr.next()) {
 					hits.add(metadataGr.getUniqueValue());
@@ -259,13 +260,13 @@ CodeSearchHandlerMetadata.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 06:23:04</sys_created_on>
         <sys_id>adf99770c3ad32d0de14d8477d0131a9</sys_id>
-        <sys_mod_count>20</sys_mod_count>
+        <sys_mod_count>26</sys_mod_count>
         <sys_name>CodeSearchHandlerMetadata</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_adf99770c3ad32d0de14d8477d0131a9</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 18:05:08</sys_updated_on>
+        <sys_updated_on>2025-12-18 22:34:37</sys_updated_on>
     </sys_script_include>
 </record_update>

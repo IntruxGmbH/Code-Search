@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?><database>
-    <element db_object_id="52a0cce8c361fa90de14d8477d0131d8" label="Flow" max_length="40" name="x_itx_codesearch_st_flow" type="collection">
+    <element db_object_id="52a0cce8c361fa90de14d8477d0131d8" label="Flow Search" max_length="40" name="x_itx_codesearch_st_flow" type="collection">
         <element label="Actions" max_length="4000" name="actions" type="glide_action_list"/>
         <element attributes="readonly_clickthrough=true" display="true" label="Flow" max_length="32" name="flow" reference="sys_hub_flow_base" type="reference"/>
         <element attributes="readonly_clickthrough=true" label="Application" max_length="32" name="sys_scope" reference="sys_scope" type="reference"/>

@@ -28,8 +28,9 @@ CodeSearchAPI.prototype = {
 	 * which are not covered by the given search group.
 	 * 
 	 * @param {object} [params]
+	 * @param {string} [params.table]
+	 * @param {string} [params.group]
 	 * @param {string} [params.scope]
-	 * @param {string} [params.searchGroup]
 	 * @returns {string[]}
 	 */
 	getSearchTables: function (params) {
@@ -60,9 +61,9 @@ CodeSearchAPI.prototype = {
 
 	/**
 	 * @param {GlideRecordGenerated} anyGr
-	 * @returns {JSON}
+	 * @returns {object}
 	 */
-	serialize: function (anyGr) {
+	toJSON: function (anyGr) {
 		const klass = anyGr.getRecordClassName();
 		for (const handler of this.handlers) {
 			if (handler.handlesTable(klass)) {
@@ -77,11 +78,11 @@ CodeSearchAPI.prototype = {
 					}
 				}
 
-				return handler.serialize(anyGr);
+				return handler.toJSON(anyGr);
 			}
 		}
 
-		gs.info(`no handler so serialize record in table '${klass}' found`);
+		gs.info(`no handler to JSON'ify for '${klass}' found`);
 		return null;
 	},
 
@@ -91,13 +92,13 @@ CodeSearchAPI.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-25 21:48:48</sys_created_on>
         <sys_id>fb560ebfc395f290de14d8477d013175</sys_id>
-        <sys_mod_count>27</sys_mod_count>
+        <sys_mod_count>32</sys_mod_count>
         <sys_name>CodeSearchAPI</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_fb560ebfc395f290de14d8477d013175</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-11 23:39:42</sys_updated_on>
+        <sys_updated_on>2025-12-18 22:33:39</sys_updated_on>
     </sys_script_include>
 </record_update>

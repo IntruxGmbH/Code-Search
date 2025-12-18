@@ -49,16 +49,51 @@
      //      v_record.setLastErrorMessage(message);
      //  }
   })(v_record);]]></insert_script>
-        <name>ITX Code Search - Proxy</name>
+        <name>ITX Code Search Any Record</name>
         <script><![CDATA[(function executeQuery(v_table, v_query) {
+
+	/**
+	 * The primary goal of this remote table is to fix the OOTB Code Search for tables
+	 * which lack the sys_class_name field:
+	 * The OOTB Table Search Script Include (sn_codesearch.CodeSearch) does a 
+	 * .orderBy('sys_class_name') which will result a invalid query which results 
+	 * in zero matches if the searched table does not have this field.
+	 * 
+	 * The x_itx_codesearch_st_any table will act as a mirror to the affected tables
+	 * by simply providing a data field (containing all fields)
+	 * and a sys_class_name (containing the table name) of the otherwise skipped table.
+	 * 
+	 * This way, the OOTB codesearch will cover tables without a sys_class_name field
+	 * (e.g. sys_trigger).
+	 */
 
 	/* global gs, x_itx_codesearch */
 	/* global GlideRecord, GlideTableHierarchy */
 	/* eslint no-undef: "error" */
 
-	const uri = gs.action.getGlideURI();
-	const groupName = uri.get('search_group');
-	const scope = uri.get('search_all_scopes') == 'false' ? uri.get('current_app') : '';
+	const api = new x_itx_codesearch.CodeSearchAPI();
+	const handler = new x_itx_codesearch.CodeSearchHandlerAny();
+	if (v_query.isGet()) {
+		//
+		// Use Case: "Show Data" UI Action
+		//
+		const config = v_query.getSysId();
+		const { table, sys_id } = JSON.parse(config);
+		const anyGr = handler.lookup(table, [sys_id]);
+		if (anyGr.next()) {
+			const data = api.toJSON(anyGr);
+			v_table.addRow({
+				sys_id: config,
+				sys_class_name: anyGr.getRecordClassName(),
+				record: sys_id,
+				data: JSON.stringify(data, null, 2),
+				actions: 'c838fd22c371f690de14d8477d013160'
+			});
+		}
+
+		return;
+	}
+
 	const dataCondition = v_query.getCondition('data');
 	const term = dataCondition?.startsWith('dataCONTAINS')
 		? dataCondition.substring('dataCONTAINS'.length)
@@ -66,66 +101,110 @@
 		? dataCondition.substring('dataLIKE'.length)
 		: '';
 
-	const tableCondition = v_query.getCondition('sys_class_name');
-	const table = tableCondition?.startsWith('sys_class_name=')
-		? tableCondition.substring('sys_class_name='.length)
-		: '';
-
-	const sysIdCondition = v_query.getCondition('sys_id');
-	const sysId = sysIdCondition?.startsWith('sys_id=')
-		? sysIdCondition.substring('sys_id='.length)
-		: '';
-
-	const directTable = uri.get('itx_codesearch_table') || table;
-	const directSysID = uri.get('itx_codesearch_sys_id') || sysId;
-
-	if (directTable && directSysID) {
-		const handler = new x_itx_codesearch.CodeSearchHandlerAny();
-		handler.batchToJSON(directTable, [directSysID]).forEach(record => {
-			v_table.addRow({
-				sys_id: record.sys_id,
-				sys_class_name: record.sys_class_name,
-				sys_scope: record.sys_scope,
-				record: record.sys_id,
-				data: JSON.stringify(record.fields, null, 2),
-				actions: 'c838fd22c371f690de14d8477d013160'
-			});
-		});
+	const uri = gs.action.getGlideURI();
+	if (!term) {
+		if (uri.toString() == 'x_itx_codesearch_st_any_list.do') {
+			gs.addInfoMessage('To search a specific table, use the filter:<br/>[Search Table][=][table]<br/>[AND]<br/>[Data][contains][term]');
+		}
+		
 		return;
 	}
 
-	if (term) {
-		let groupSysID = '';
+	const tableCondition = v_query.getCondition('search_table');
+	const searchTable = tableCondition?.startsWith('search_table=')
+		? tableCondition.substring('search_table='.length)
+		: '';
+
+	if (searchTable) {
+		//
+		// Use Case: "Manual Search" (via List + Filter)
+		//
+		const tables = handler.getHandledTables({
+			table: searchTable
+		});
+		tables.forEach(table => {
+			const hits = handler.search(table, term);
+			const anyGr = handler.lookup(table, hits);
+			while (anyGr.next()) {
+				const sysID = anyGr.getUniqueValue();
+				v_table.addRow({
+					sys_id: JSON.stringify({
+						table: table,
+						sys_id: sysID
+					}),
+					sys_class_name: anyGr.getRecordClassName(),
+					search_table: searchTable,
+					record: sysID,
+					// use the API to JSON'ify as it might be a metadata record
+					data: JSON.stringify(api.toJSON(anyGr), null, 2),
+					actions: 'c838fd22c371f690de14d8477d013160'
+				});
+			}
+		});
+
+		return;
+	}
+
+	//
+	// Use Case: "Code Search using {Classic | ServiceNow} Studio"
+	// scope and group can be extracted from the request URI
+	//
+	const scope = (() => {
+		if (uri.get('search_all_scopes') == 'true') {
+			return '';
+		}
+		
+		return uri.get('current_app') || '';
+	})();
+
+	const groupSysID = (() => {
+		const groupName = uri.get('search_group');
 		if (groupName) {
 			const groupGr = new GlideRecord('sn_codesearch_search_group');
 			groupGr.addQuery('name', groupName);
 			groupGr.setLimit(1);
 			groupGr.query();
 			if (groupGr.next()) {
-				groupSysID = groupGr.getUniqueValue();
+				return groupGr.getUniqueValue();
 			}
-		}
 
-		const handler = new x_itx_codesearch.CodeSearchHandlerAny();
+		}
+		
+		return '';
+	})();
+	
+	if (groupSysID) {
+		// If a group is provided, the handler will return all tables
+		// without a sys_class_name field.
+		// As the "Any Search" table will only handle exactly those tables
+		// in a code search context, we know that there is no better handler
+		// to do the JSON'ify (all other handlers are for metadata records).
 		const tables = handler.getHandledTables({
 			group: groupSysID,
-			scope: scope,
-			table: table
+			scope: scope
 		});
-		tables.forEach(table => {
-			const hits = handler.search(table, term, {
+		tables.forEach(searchTable => {
+			const hits = handler.search(searchTable, term, {
 				scope: scope
 			});
-			handler.batchToJSON(table, hits).forEach(record => {
+			const anyGr = handler.lookup(searchTable, hits);
+			while (anyGr.next()) {
+				const sysID = anyGr.getUniqueValue();
+				const data = handler.toJSON(anyGr);
+				// sysId must be provided because the code search opens the record directly
+				// based on sys_class_name
 				v_table.addRow({
-					sys_id: record.sys_id,
-					sys_class_name: record.sys_class_name,
-					sys_scope: record.sys_scope,
-					record: record.sys_id,
-					data: JSON.stringify(record.fields, null, 2),
+					/*sys_id: JSON.stringify({
+						table: searchTable,
+						sys_id: sysID
+					}),*/
+					sys_id: sysID,
+					sys_class_name: anyGr.getRecordClassName(),
+					record: sysID,
+					data: JSON.stringify(data.fields, null, 2),
 					actions: 'c838fd22c371f690de14d8477d013160'
 				});
-			});
+			}
 		});
 
 		return;
@@ -138,15 +217,15 @@
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
         <sys_id>a9c234c7c3edba14de14d8477d01311e</sys_id>
-        <sys_mod_count>38</sys_mod_count>
-        <sys_name>ITX Code Search - Proxy</sys_name>
+        <sys_mod_count>74</sys_mod_count>
+        <sys_name>ITX Code Search Any Record</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_vtable_a9c234c7c3edba14de14d8477d01311e</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 20:33:57</sys_updated_on>
-        <table>x_itx_codesearch_st_proxy</table>
+        <sys_updated_on>2025-12-18 22:08:24</sys_updated_on>
+        <table>x_itx_codesearch_st_any</table>
         <update_script><![CDATA[(function executeUpdate(v_record, v_changed_fields) {
      // Parameters:
      //    v_record - a map of field names and values containing the sys_id of the record

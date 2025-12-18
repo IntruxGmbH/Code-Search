@@ -20,6 +20,18 @@
 			.filter(function (t) { return !hardcodedTables.includes(t.name); })
 			.map(function (t) { return t.name; })
 		);
+
+		// the tab manager fails to open some search results
+		// in which case we resort to using the direct url open
+		var tm = injector.get('tabManager');
+		var ootbOpenSearchResult = tm.openSearchResult;
+		tm.openSearchResult = function (name, table, sysId) {
+			try {
+				ootbOpenSearchResult.apply(this, arguments);
+			} catch (e) {
+				devStudioAPI.openStudioTab(table + '.do?sys_id=' + sysId);
+			}
+		};
 		parent.x_itx_codesearch_fixed = true;
 	});
 });]]></example>
@@ -30,13 +42,13 @@
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-26 12:39:48</sys_created_on>
         <sys_id>e4a25540c3ed7690de14d8477d0131cb</sys_id>
-        <sys_mod_count>2</sys_mod_count>
+        <sys_mod_count>7</sys_mod_count>
         <sys_name>classic_studio_fix</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_client_extension_point_e4a25540c3ed7690de14d8477d0131cb</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-26 12:42:13</sys_updated_on>
+        <sys_updated_on>2025-12-18 22:15:11</sys_updated_on>
     </sys_client_extension_point>
 </record_update>

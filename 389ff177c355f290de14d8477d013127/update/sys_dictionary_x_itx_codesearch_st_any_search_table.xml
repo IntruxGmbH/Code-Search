@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update>
-    <sys_dictionary action="INSERT_OR_UPDATE" element="actions" table="x_itx_codesearch_st_proxy">
+    <sys_dictionary action="INSERT_OR_UPDATE" element="search_table" table="x_itx_codesearch_st_any">
         <active>true</active>
         <array>false</array>
         <attributes/>
@@ -13,7 +13,7 @@
         <choice/>
         <choice_field/>
         <choice_table/>
-        <column_label>Actions</column_label>
+        <column_label>Search Table</column_label>
         <comments/>
         <create_roles/>
         <default_value/>
@@ -26,16 +26,16 @@
         <dynamic_creation_script/>
         <dynamic_default_value/>
         <dynamic_ref_qual/>
-        <element>actions</element>
+        <element>search_table</element>
         <element_reference>false</element_reference>
         <foreign_database/>
         <formula/>
         <function_definition/>
         <function_field>false</function_field>
-        <internal_type display_value="">glide_action_list</internal_type>
+        <internal_type display_value="">table_name</internal_type>
         <mandatory>false</mandatory>
-        <max_length>4000</max_length>
-        <name>x_itx_codesearch_st_proxy</name>
+        <max_length>80</max_length>
+        <name>x_itx_codesearch_st_any</name>
         <next_element/>
         <primary>false</primary>
         <read_only>false</read_only>
@@ -51,14 +51,14 @@
         <staged>false</staged>
         <sys_class_name>sys_dictionary</sys_class_name>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
-        <sys_created_on>2025-12-16 19:38:16</sys_created_on>
-        <sys_name>Actions</sys_name>
+        <sys_created_on>2025-12-18 12:52:10</sys_created_on>
+        <sys_name>Search Table</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
-        <sys_update_name>sys_dictionary_x_itx_codesearch_st_proxy_actions</sys_update_name>
+        <sys_update_name>sys_dictionary_x_itx_codesearch_st_any_search_table</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 19:38:16</sys_updated_on>
+        <sys_updated_on>2025-12-18 12:52:10</sys_updated_on>
         <table_reference>false</table_reference>
         <text_index>false</text_index>
         <unique>false</unique>

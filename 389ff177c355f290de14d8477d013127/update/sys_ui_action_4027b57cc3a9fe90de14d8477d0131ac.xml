@@ -18,8 +18,8 @@
         <format_for_configurable_workspace>false</format_for_configurable_workspace>
         <hint/>
         <isolate_script>true</isolate_script>
-        <list_action>true</list_action>
-        <list_banner_button>true</list_banner_button>
+        <list_action>false</list_action>
+        <list_banner_button>false</list_banner_button>
         <list_button>false</list_button>
         <list_choice>false</list_choice>
         <list_context_menu>false</list_context_menu>
@@ -31,19 +31,20 @@
         <onclick>startCodeSearch()</onclick>
         <order>100</order>
         <script><![CDATA[function startCodeSearch() {
-	/* global g_list, g_form, GlideAjax, GlideDialogWindow, prompt */
+	/* global g_list, g_sysId, GlideUI */
+	/* global g_form, GlideAjax, GlideModal */
 	/* eslint no-undef: "error" */
-	if (typeof g_list != 'undefined') {
-		const term = prompt('Enter your search term: ');
-		if (term) {
-			startSearch(term);
-		}
+	if (typeof g_list !== 'undefined') {
+		var config = JSON.parse(g_sysId);
+		startSearch(config.term, config.scope, config.group, function (msg) {
+			GlideUI.get().addOutputMessage({ type: 'error', msg: msg });
+		});
 	} else {
-		const config = JSON.parse(g_form.getValue('data'));
-		startSearch(config.term, config.scope, config.group);
-	}	
+		var config = JSON.parse(g_form.getValue('data'));
+		startSearch(config.term, config.scope, config.group, g_form.addErrorMessage);
+	} 
 
-	function startSearch(term, scope, group) {
+	function startSearch(term, scope, group, errHandler) {
 		const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
 		ga.addParam('sysparm_name', 'startSearch');
 		ga.addParam('term', term);
@@ -51,14 +52,32 @@
 		ga.addParam('group', group);
 		ga.getXMLAnswer(function (result) {
 			result = JSON.parse(result);
-			if (result.status == 'success') {
-				const dd = new GlideDialogWindow('hierarchical_progress_viewer', false, '40em', '10em');
-				dd.setTitle('Code Search for \'' + term + '\'');
-				dd.setPreference('sysparm_renderer_execution_id', result.execution_id);
-				dd.render();
-			} else if (result.message && typeof g_form != 'undefined') {
-				g_form.addErrorMessage(result.message);
+			if (result?.status != 'success') {
+				errHandler(result?.message || 'Unknown error on code search start');
+				return;
 			}
+			const dd = new GlideModal('hierarchical_progress_viewer', false, '40em', '10em');
+			dd.setTitle('Code Search for \'' + term + '\'');
+			dd.setPreference('sysparm_renderer_execution_id', result.execution_id);
+
+			let completed = false;
+			dd.on('executionComplete', function () {
+				completed = true;
+			});
+			dd.on('beforeclose', function () {
+				if (!completed) {
+					const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
+					ga.addParam('sysparm_name', 'cancelSearch');
+					ga.addParam('tracker', result.execution_id);
+					ga.addParam('message', 'cancelled (window closed)');
+					ga.getXMLAnswer(function (result) {
+						if (!result?.status == 'success') {
+							errHandler(result?.message || 'Unknown error during search cancellation');
+						}
+					});
+				}
+			});
+			dd.render();
 		});
 	}
 }]]></script>
@@ -72,7 +91,7 @@
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
         <sys_id>4027b57cc3a9fe90de14d8477d0131ac</sys_id>
-        <sys_mod_count>12</sys_mod_count>
+        <sys_mod_count>22</sys_mod_count>
         <sys_name>Start Search</sys_name>
         <sys_overrides/>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
@@ -80,7 +99,7 @@
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_ui_action_4027b57cc3a9fe90de14d8477d0131ac</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 20:47:51</sys_updated_on>
+        <sys_updated_on>2025-12-18 19:42:36</sys_updated_on>
         <table>x_itx_codesearch_st_metadata</table>
         <ui11_compatible>false</ui11_compatible>
         <ui16_compatible>false</ui16_compatible>

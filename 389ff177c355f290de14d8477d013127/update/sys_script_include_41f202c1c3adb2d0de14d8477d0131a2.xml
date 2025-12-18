@@ -41,6 +41,10 @@ CodeSearchHandlerFlow.prototype = {
 	 * @returns {string[]}
 	 */
 	getHandledTables: function (context) {
+		if (context?.table && context.table != 'sys_hub_flow') {
+			return [];
+		}
+
 		if (context?.scope) {
 			const flowGr = new GlideRecord('sys_hub_flow');
 			flowGr.addQuery('sys_scope', context.scope);
@@ -271,13 +275,13 @@ CodeSearchHandlerFlow.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 18:41:24</sys_created_on>
         <sys_id>41f202c1c3adb2d0de14d8477d0131a2</sys_id>
-        <sys_mod_count>8</sys_mod_count>
+        <sys_mod_count>9</sys_mod_count>
         <sys_name>CodeSearchHandlerFlow</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_41f202c1c3adb2d0de14d8477d0131a2</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 17:54:36</sys_updated_on>
+        <sys_updated_on>2025-12-18 22:35:59</sys_updated_on>
     </sys_script_include>
 </record_update>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="797b1e83c3fd7e90de14d8477d013168" label="Any Search" max_length="40" name="x_itx_codesearch_st_any" type="collection">
+        <element label="Class" max_length="80" name="sys_class_name" type="table_name"/>
+        <element label="Search Table" max_length="80" name="search_table" type="table_name"/>
+        <element label="Actions" max_length="4000" name="actions" type="glide_action_list"/>
+        <element attributes="readonly_clickthrough=true" dependent="sys_class_name" dependent_on_field="sys_class_name" display="true" label="Record" max_length="32" name="record" type="document_id" use_dependent_field="true"/>
+        <element label="Data" max_length="16777215" name="data" type="string"/>
+        <index name="index">
+            <element name="record"/>
+        </index>
+    </element>
+</database>

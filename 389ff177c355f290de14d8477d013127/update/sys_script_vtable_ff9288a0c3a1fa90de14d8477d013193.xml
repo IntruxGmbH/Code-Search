@@ -84,7 +84,7 @@
 	actionGr.query();
 	const handler = new x_itx_codesearch.CodeSearchHandlerFlowAction();
 	while (actionGr.next()) {
-		const data = handler.toJSON(actionGr);
+		const data = handler.serialize(actionGr);
 		const dataStr = JSON.stringify(data, null, 2);
 		v_table.addRow({
 			sys_id: data.sys_id,
@@ -92,7 +92,7 @@
 			sys_scope: actionGr.getValue('sys_scope'),
 			action: data.sys_id,
 			data: dataStr,
-			actions: '1664c468c3a1fa90de14d8477d0131d0'
+			actions: 'c838fd22c371f690de14d8477d013160'
 		});
 	}
  
@@ -103,14 +103,14 @@
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
         <sys_id>ff9288a0c3a1fa90de14d8477d013193</sys_id>
-        <sys_mod_count>8</sys_mod_count>
+        <sys_mod_count>9</sys_mod_count>
         <sys_name>ITX Code Search Flow Action</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_vtable_ff9288a0c3a1fa90de14d8477d013193</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 17:58:26</sys_updated_on>
+        <sys_updated_on>2025-12-18 20:25:38</sys_updated_on>
         <table>x_itx_codesearch_st_flow_action</table>
         <update_script><![CDATA[(function executeUpdate(v_record, v_changed_fields) {
      // Parameters:

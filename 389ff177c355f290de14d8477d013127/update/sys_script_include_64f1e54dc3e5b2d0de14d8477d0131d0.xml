@@ -135,10 +135,15 @@ Utilities.prototype = {
 
 			const type = ge.getInternalType();
 			// gziped fields typically have this length (and usually there is only a single such field)
-			if (type == 'string' && ge.getLength() == 16777215) {
+			if (type == 'string') {
+				const value = element.toString();
+				if (!value) return;
+				
 				fields.push({
 					name: name,
-					value: this.deflateFields(element.toString())
+					value: ge.getLength() == 16777215 && value.startsWith('H4sIAAAAAAAA')
+						? this.deflateFields(value)
+						: value
 				});
 			} else if (type == 'glide_var' || type == 'variables') {
 				fields.push({
@@ -226,13 +231,13 @@ Utilities.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 18:32:17</sys_created_on>
         <sys_id>64f1e54dc3e5b2d0de14d8477d0131d0</sys_id>
-        <sys_mod_count>16</sys_mod_count>
+        <sys_mod_count>17</sys_mod_count>
         <sys_name>Utilities</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_64f1e54dc3e5b2d0de14d8477d0131d0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 18:23:09</sys_updated_on>
+        <sys_updated_on>2025-12-18 20:07:50</sys_updated_on>
     </sys_script_include>
 </record_update>

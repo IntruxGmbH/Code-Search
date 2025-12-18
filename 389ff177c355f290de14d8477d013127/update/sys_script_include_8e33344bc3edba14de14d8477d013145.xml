@@ -44,7 +44,11 @@ CodeSearchHandlerAny.prototype = {
 	 */
 	getHandledTables: function (context) {
 		if (context?.table) {
-			return [context.table];
+			if (gs.tableExists(context.table)) {
+				return [context.table];
+			}
+
+			return [];
 		}
 
 		const tables = [];
@@ -109,24 +113,24 @@ CodeSearchHandlerAny.prototype = {
 		});
 
 		this.scriptGr.script = `(function (table, fields, term, limit) {
-		var anyGr = new GlideRecord(table);
-		var cond = anyGr.addQuery('sys_id', term);
-		fields.forEach(function (field) {
-			cond.addOrCondition(field, 'CONTAINS', term);
-		});
-		
-		if (limit) {
-			anyGr.setLimit(limit);
-		}
-		
-		anyGr.query();
+			var anyGr = new GlideRecord(table);
+			var cond = anyGr.addQuery('sys_id', term);
+			fields.forEach(function (field) {
+				cond.addOrCondition(field, 'CONTAINS', term);
+			});
+			
+			if (limit) {
+				anyGr.setLimit(limit);
+			}
+			
+			anyGr.query();
 
-		var hits = [];
-		while (anyGr.next()) {
-			hits.push(anyGr.getUniqueValue());
-		}
+			var hits = [];
+			while (anyGr.next()) {
+				hits.push(anyGr.getUniqueValue());
+			}
 
-		return hits;
+			return hits;
 		})(table, JSON.parse(fields), term, limit);`;
 		const hits = new Set(new GlideScopedEvaluator().evaluateScript(this.scriptGr, 'script', {
 			table: table,
@@ -164,26 +168,18 @@ CodeSearchHandlerAny.prototype = {
 		return {
 			sys_class_name: anyGr.getRecordClassName(),
 			sys_id: anyGr.getUniqueValue(),
-			sys_scope: anyGr.getValue('sys_scope'),
 			fields: this.util.toJSON(anyGr)
 		};
 	},
 
-	batchToJSON: function (table, sysIDs) {
-		this.scriptGr.script = `(function (self, table, sysIDs) {
-		var anyGr = new GlideRecord(table);
-		anyGr.addQuery('sys_id', 'IN', sysIDs);
-		anyGr.query();
-
-		var records = [];
-		while (anyGr.next()) {
-			records.push(self.toJSON(anyGr));
-		}
-
-		return records;
-		})(self, table, sysIDs);`;
+	lookup: function (table, sysIDs) {
+		this.scriptGr.script = `(function (table, sysIDs) {
+			var anyGr = new GlideRecord(table);
+			anyGr.addQuery('sys_id', 'IN', sysIDs);
+			anyGr.query();
+			return anyGr;
+		})(table, sysIDs);`;
 		const gse = new GlideScopedEvaluator();
-		gse.putVariable('self', this);
 		return gse.evaluateScript(this.scriptGr, 'script', {
 			table: table,
 			sysIDs: sysIDs
@@ -196,13 +192,13 @@ CodeSearchHandlerAny.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-12-05 18:00:53</sys_created_on>
         <sys_id>8e33344bc3edba14de14d8477d013145</sys_id>
-        <sys_mod_count>36</sys_mod_count>
+        <sys_mod_count>41</sys_mod_count>
         <sys_name>CodeSearchHandlerAny</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_8e33344bc3edba14de14d8477d013145</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 19:58:38</sys_updated_on>
+        <sys_updated_on>2025-12-18 13:09:07</sys_updated_on>
     </sys_script_include>
 </record_update>

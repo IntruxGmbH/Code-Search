@@ -28,6 +28,10 @@ CodeSearchHandlerWorkflow.prototype = {
 	 * @returns {string[]}
 	 */
 	getHandledTables: function (context) {
+		if (context?.table && context.table != 'wf_workflow') {
+			return [];
+		}
+
 		if (context?.scope) {
 			const wfGr = new GlideRecord('wf_workflow');
 			wfGr.addQuery('sys_scope', context.scope);
@@ -188,13 +192,13 @@ CodeSearchHandlerWorkflow.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 21:26:54</sys_created_on>
         <sys_id>d9d82ac1c3a5f2d0de14d8477d013137</sys_id>
-        <sys_mod_count>9</sys_mod_count>
+        <sys_mod_count>10</sys_mod_count>
         <sys_name>CodeSearchHandlerWorkflow</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_d9d82ac1c3a5f2d0de14d8477d013137</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 18:04:16</sys_updated_on>
+        <sys_updated_on>2025-12-18 22:36:57</sys_updated_on>
     </sys_script_include>
 </record_update>

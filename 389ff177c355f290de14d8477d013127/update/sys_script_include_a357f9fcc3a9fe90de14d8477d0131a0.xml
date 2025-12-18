@@ -10,7 +10,7 @@
         <name>CodeSearchUtilClient</name>
         <sandbox_callable>false</sandbox_callable>
         <script><![CDATA[/* global global */
-/* global Class, GlideScriptedHierarchicalWorker */
+/* global Class, GlideScriptedHierarchicalWorker, GlideExecutionTracker */
 /* eslint no-undef: "error" */
 var CodeSearchUtilClient = Class.create();
 CodeSearchUtilClient.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
@@ -45,19 +45,62 @@ CodeSearchUtilClient.prototype = Object.extendsObject(global.AbstractAjaxProcess
 		return JSON.stringify(result);
 	},
 
+	cancelSearch: function () {
+		const result = {
+			status: 'error',
+			messsage: 'unknown error'
+		};
+
+		const trackerSysID = this.getParameter('tracker');
+		if (trackerSysID) {
+			/*
+			const tracker = new GlideExecutionTracker(trackerSysID);
+			if (tracker) {
+				try {
+					// cancellation is not allowed in scoped apps
+					tracker.cancel(this.getParameter('message'));
+					result.messsage = '';
+					result.status = 'success';
+				} catch (e) {
+					result.messsage = 'Failed to cancel tracker: ' + e;
+				}
+			} else {
+				result.messsage = 'invalid tracker sys_id';
+			}*/
+			const scriptGr = new GlideRecord('clone_cleanup_script');
+			scriptGr.addQuery('sys_scope', 'global');
+			scriptGr.setLimit(1);
+			scriptGr.query();
+			if (scriptGr.next()) {
+				scriptGr.script = 'SNC.GlideExecutionTracker.getBySysID(trackerID).cancel(message)';
+				result.result = new GlideScopedEvaluator().evaluateScript(scriptGr, 'script', {
+					trackerID: trackerSysID,
+					message: this.getParameter('message') || 'cancelled'
+				});
+				result.status = 'success';
+			} else {
+				result.messsage = 'No infuseable script record found';
+			}
+		} else {
+			result.messsage = 'tracker must be provided';
+		}
+
+		return JSON.stringify(result);
+	},
+
     type: 'CodeSearchUtilClient'
 });]]></script>
         <sys_class_name>sys_script_include</sys_class_name>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-28 23:18:46</sys_created_on>
         <sys_id>a357f9fcc3a9fe90de14d8477d0131a0</sys_id>
-        <sys_mod_count>5</sys_mod_count>
+        <sys_mod_count>9</sys_mod_count>
         <sys_name>CodeSearchUtilClient</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_a357f9fcc3a9fe90de14d8477d0131a0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 18:25:47</sys_updated_on>
+        <sys_updated_on>2025-12-18 19:42:01</sys_updated_on>
     </sys_script_include>
 </record_update>
