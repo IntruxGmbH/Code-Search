@@ -34,12 +34,12 @@ function getResults() {
 		var group = document.getElementById('searchgroup').value;
 		var tableSysId = document.getElementById('table-' + group).value;
 		if (tableSysId) {
-			const gr = new GlideRecord('sys_db_object');
-			gr.addQuery('sys_id', tableSysId);
-			gr.query(function (result) {
-				if (result.next()) {
-					startSearch(term, scope, group == 'none' ? '' : group, result.name, errHandler);
+			fetch('/api/now/table/sys_db_object/' + tableSysId + '?sysparm_fields=name', {
+				headers: {
+					'X-UserToken': g_ck
 				}
+			}).then(response => response.json()).then(json => {
+				startSearch(term, scope, group == 'none' ? '' : group, json.result.name, errHandler);
 			});
 		} else if (group != 'none') {
 			startSearch(term, scope, group, null, errHandler);
@@ -89,7 +89,7 @@ function startSearch(term, scope, group, table, errHandler) {
 ]]></client_script>
         <description/>
         <direct>false</direct>
-        <endpoint>x_itx_codesearch_search.do</endpoint>
+        <endpoint>x_itx_codesearch_search_async.do</endpoint>
         <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
 <j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
 
@@ -171,7 +171,7 @@ function startSearch(term, scope, group, table, errHandler) {
 				<label class="col-sm-3 control-label" for="search-table">Search Table</label>
 				<span class="col-sm-9">
 					<div class="table-container" id="table-none-container">
-						<g:ui_reference name="table-none" table="sys_db_object" columns="label,name,sys_scope" order_by="name" />
+						<g:ui_reference name="table-none" table="sys_db_object" columns="name;sys_scope" order_by="name" />
 					</div>
 
 					<g:evaluate>
@@ -180,7 +180,7 @@ function startSearch(term, scope, group, table, errHandler) {
 					<j:while test="${searchGroupGr.next()}">
 						<div class="table-container" id="table-${searchGroupGr.sys_id}-container" style="display:none">
 							<g:ui_reference name="table-${searchGroupGr.sys_id}"
-								table="sys_db_object" columns="label,name,sys_scope" order_by="name"
+								table="sys_db_object" columns="name;sys_scope" order_by="name"
 								query="nameIN${tables[searchGroupGr.name].join(',')}" />
 						</div>
 					</j:while>
@@ -205,7 +205,7 @@ function startSearch(term, scope, group, table, errHandler) {
 						scopeGr.query();
 						scopeGr.next();
 					</g:evaluate>
-					<g:ui_reference name="scope" table="sys_scope" columns="name,scope" order_by="name" value="${scopeGr.sys_id}" displayValue="${scopeGr.name}" />
+					<g:ui_reference name="scope" table="sys_scope" columns="name;scope" order_by="name" value="${scopeGr.sys_id}" displayValue="${scopeGr.name}" />
 				</span>
 			</div>		
 		</fieldset>
@@ -219,19 +219,19 @@ function startSearch(term, scope, group, table, errHandler) {
 	</div>
 
 </j:jelly>]]></html>
-        <name>search</name>
+        <name>search_async</name>
         <processing_script/>
         <sys_class_name>sys_ui_page</sys_class_name>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-12-14 11:48:12</sys_created_on>
         <sys_id>3a3099b1c3757e50de14d8477d013168</sys_id>
-        <sys_mod_count>36</sys_mod_count>
-        <sys_name>search</sys_name>
+        <sys_mod_count>51</sys_mod_count>
+        <sys_name>search_async</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_ui_page_3a3099b1c3757e50de14d8477d013168</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-18 22:37:56</sys_updated_on>
+        <sys_updated_on>2025-12-21 23:54:57</sys_updated_on>
     </sys_ui_page>
 </record_update>

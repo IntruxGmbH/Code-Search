@@ -29,7 +29,7 @@ CodeSearchExt.prototype = {
 	createTinyURL: function (url) {
 		this.scriptGr.script = `new GlideTinyURL().createTinyURL(url)`;
 		return new GlideScopedEvaluator().evaluateScript(this.scriptGr, 'script', {
-			url: url
+			url
 		});
 	},
 
@@ -47,19 +47,37 @@ CodeSearchExt.prototype = {
 		});
 	},
 
+	/**
+	 * @param {string} trackerId
+	 * @param {string?} message
+	 */
+	cancelTracker: function (trackerId, message) {
+		this.scriptGr.script = `(function (trackerId, message) {
+		if (message) {
+			SNC.GlideExecutionTracker.getBySysID(trackerId).cancel(message);
+		} else {
+			SNC.GlideExecutionTracker.getBySysID(trackerId).cancel();
+		}
+		})(trackerId, message);`;
+		return new GlideScopedEvaluator().evaluateScript(this.scriptGr, 'script', {
+			trackerId,
+			message: message || ''
+		});
+	},
+
 	type: 'CodeSearchExt'
 };]]></script>
         <sys_class_name>sys_script_include</sys_class_name>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-25 21:47:15</sys_created_on>
         <sys_id>24270273c3d5f290de14d8477d0131d8</sys_id>
-        <sys_mod_count>4</sys_mod_count>
+        <sys_mod_count>5</sys_mod_count>
         <sys_name>CodeSearchExt</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_24270273c3d5f290de14d8477d0131d8</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-11-29 21:51:31</sys_updated_on>
+        <sys_updated_on>2025-12-20 18:28:56</sys_updated_on>
     </sys_script_include>
 </record_update>

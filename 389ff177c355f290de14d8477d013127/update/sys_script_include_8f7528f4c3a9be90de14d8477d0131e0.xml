@@ -15,13 +15,18 @@
 /* eslint no-undef: "error" */
 var CodeSearchWorker = Class.create();
 CodeSearchWorker.prototype = {
-	initialize: function () {
+	initialize: function (trackerId) {
 		this.api = new x_itx_codesearch.CodeSearchAPI();
 		this.util = new x_itx_codesearch.Utilities();
 		const limit = +gs.getProperty('sn_codesearch.search.results.max', '500');
 		this.limit = isNaN(limit) ? 500 : this.limit;
 
-		this.tracker = GlideExecutionTracker.getLastRunning();
+		if (trackerId) {
+			this.tracker = new GlideExecutionTracker(trackerId);
+		} else {
+			this.tracker = GlideExecutionTracker.getLastRunning();
+		}
+
 		this.tracker_id = this.tracker.getSysID();
 	},
 
@@ -37,15 +42,15 @@ CodeSearchWorker.prototype = {
 	search: function (term, context) {
 		let numAllHits = 0;
 		const tables = this.api.getSearchTables(context);
-		for (let i = 0; i < tables.length && !this._trackerIsCancelled(); i++) {
+		for (let i = 0; i < tables.length && !this._isCancelled(); i++) {
 			const table = tables[i];
 
 			if (this.limit && numAllHits >= this.limit) {
-				this._trackerUpdateMessage(`Stopping search because limit reached`);
+				this._updateMessage(`Stopping search because limit reached`);
 				break;
 			}
 
-			this._trackerUpdateMessage(`Searching '${table}'`);
+			this._updateMessage(`Searching '${table}'`);
 			const result = {
 				table: table,
 				term: term,
@@ -56,7 +61,7 @@ CodeSearchWorker.prototype = {
 			};
 			
 			if (result.hits.length) {
-				const child = this._trackerCreateChild(`Table: ${table} for '${term}'`);
+				const child = this._createChild(`Table: ${table} for '${term}'`);
 				child.run();
 				child.updateResult(result);
 				const url = this.util.createTinyURL(`/${table}_list.do?sysparm_query=sys_idIN${result.hits.join(',')}`);
@@ -64,79 +69,20 @@ CodeSearchWorker.prototype = {
 				numAllHits += result.hits.length;
 			}
 
-			this._trackerUpdatePercentComplete(Math.round((i / tables.length) * 100));
+			this._updatePercentComplete(Math.round((i / tables.length) * 100));
 		}
 
 		if (numAllHits >= this.limit) {
 			// I was unable to change the parent success message - hardcoded to be "Success" ?
-			const child = this._trackerCreateChild(`Search Limit (${this.limit}) reached`);
+			const child = this._createChild(`Search Limit (${this.limit}) reached`);
 			child.run();
 			child.success();
 		}
 
-		this._trackerSuccess(`Found ${numAllHits} records in ${tables.length} tables`);
+		this._success(`Found ${numAllHits} records in ${tables.length} tables`);
 	},
 
-	/**
-	 * searches for a term for a given scope and search group.
-	 * 
-	 * @param {string} term
-	 * @param {object} context
-	 * @param {string?} [context.table]
-	 * @param {string?} [context.scope]
-	 * @param {string?} [context.group]
-	 */
-	search2: function (term, context) {
-		const handler = context.handler == 'metadata'
-			? new x_itx_codesearch.CodeSearchHandlerMetadata()
-			: context.handler == 'any'
-			? new x_itx_codesearch.CodeSearchHandlerAny()
-			: null;
-		if (!handler) return;
-
-		let numAllHits = 0;
-		const tables = handler.getHandledTables(context);
-		for (let i = 0; i < tables.length && !this._trackerIsCancelled(); i++) {
-			const table = tables[i];
-
-			if (this.limit && numAllHits >= this.limit) {
-				this._trackerUpdateMessage(`Stopping search because limit reached`);
-				break;
-			}
-
-			this._trackerUpdateMessage(`Searching '${table}'`);
-			const result = {
-				table: table,
-				term: term,
-				hits: handler.search(table, term, {
-					scope: context?.scope,
-					limit: this.limit ? Math.min(this.limit - numAllHits, 0) : undefined
-				})
-			};
-			
-			if (result.hits.length) {
-				const child = this._trackerCreateChild(`Table: ${table} for '${term}'`);
-				child.run();
-				child.updateResult(result);
-				const url = this.util.createTinyURL(`/${table}_list.do?sysparm_query=sys_idIN${result.hits.join(',')}`);
-				child.success(`<a target="_blank" href="${url}">results ➚</a> (${result.hits.length} hits)`);
-				numAllHits += result.hits.length;
-			}
-
-			this._trackerUpdatePercentComplete(Math.round((i / tables.length) * 100));
-		}
-
-		if (numAllHits >= this.limit) {
-			// I was unable to change the parent success message - hardcoded to be "Success" ?
-			const child = this._trackerCreateChild(`Search Limit (${this.limit}) reached`);
-			child.run();
-			child.success();
-		}
-
-		this._trackerSuccess(`Found ${numAllHits} records in ${tables.length} tables`);
-	},
-
-	_trackerCreateChild: function (name) {
+	_createChild: function (name) {
 		// not allowed in scoped application
 		// return this.tracker.createChild(name);
 
@@ -149,7 +95,7 @@ CodeSearchWorker.prototype = {
 		return globalTracker._getTracker(globalTracker.createChild());
 	},
 
-	_trackerUpdateMessage: function (message) {
+	_updateMessage: function (message) {
 		// not allowed in scoped application
 		// this.tracker.updateMessage(message);
 
@@ -162,7 +108,7 @@ CodeSearchWorker.prototype = {
 		globalTracker.updateMessage();
 	},
 	
-	_trackerIsCancelled: function () {
+	_isCancelled: function () {
 		const state = {
 			PENDING: 0,
 			RUNNING: 1,
@@ -179,7 +125,7 @@ CodeSearchWorker.prototype = {
 		return trackerGr.hasNext();
 	},
 	
-	_trackerUpdatePercentComplete: function (percentage) {
+	_updatePercentComplete: function (percentage) {
 		// not allowed in scoped application
 		// this.tracker.updatePercentComplete(percentage);
 
@@ -192,7 +138,7 @@ CodeSearchWorker.prototype = {
 		globalTracker.updatePercentComplete();
 	},
 
-	_trackerIncrementPercentComplete: function () {
+	_incrementPercentComplete: function () {
 		// not allowed in scoped application
 		// this.tracker.incrementPercentComplete(1);
 
@@ -204,7 +150,7 @@ CodeSearchWorker.prototype = {
 		globalTracker.incrementPercentComplete();
 	},
 	
-	_trackerSuccess: function (message, result) {	
+	_success: function (message, result) {	
 		this._updateResult(result);
 		this.tracker.success(message);
 		
@@ -217,7 +163,7 @@ CodeSearchWorker.prototype = {
 		// globalTracker.success();
 	},
 
-	_trackerFail: function (message, result) {
+	_fail: function (message, result) {
 		this._updateResult(result);
 		this.tracker.fail(message);
 		
@@ -246,13 +192,13 @@ CodeSearchWorker.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-28 17:55:52</sys_created_on>
         <sys_id>8f7528f4c3a9be90de14d8477d0131e0</sys_id>
-        <sys_mod_count>74</sys_mod_count>
+        <sys_mod_count>76</sys_mod_count>
         <sys_name>CodeSearchWorker</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_8f7528f4c3a9be90de14d8477d0131e0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-16 21:21:00</sys_updated_on>
+        <sys_updated_on>2025-12-20 18:31:06</sys_updated_on>
     </sys_script_include>
 </record_update>
