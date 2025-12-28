@@ -14,7 +14,7 @@ Adding the 'CodeSearch Proxy' table will pick up all the tables which do not hav
         <sandbox_callable>false</sandbox_callable>
         <script><![CDATA[/* global Set */
 /* global gs, x_itx_codesearch */
-/* global Class, GlideRecord, GlideTableHierarchy, GlideScopedEvaluator */
+/* global Class, GlideRecord, GlideAggregate, GlideTableHierarchy, GlideScopedEvaluator */
 /* eslint no-undef: "error" */
 var CodeSearchHandlerAny = Class.create();
 CodeSearchHandlerAny.prototype = {
@@ -33,7 +33,7 @@ CodeSearchHandlerAny.prototype = {
 	},
 
 	/**
-	 * the proxy search handler will handle all tables which are 
+	 * the proxy search handler can handle all non-configuration tables
 	 * 
 	 * @static
 	 * @param {object} [context]
@@ -44,7 +44,12 @@ CodeSearchHandlerAny.prototype = {
 	 */
 	getHandledTables: function (context) {
 		if (context?.table) {
-			if (gs.tableExists(context.table)) {
+			const info = new GlideTableHierarchy(context.table);
+			if (gs.tableExists(context.table) && info.getRoot() != 'sys_metadata') {
+				if (context.extensions) {
+					return info.getAllExtensions();
+				}
+				
 				return [context.table];
 			}
 
@@ -96,19 +101,28 @@ CodeSearchHandlerAny.prototype = {
 	 * @param {string} table
 	 * @param {string} term
 	 * @param {object} [options]
-	 * @param {object} [options.scope]
  	 * @param {number} [options.limit]
-	 * @param {string[]} [options.fields]
+	 * @param {boolean} [options.children]
 	 * @returns {string[]}
 	 */
 	search: function (table, term, options) {
 		const fields = [];
+		const glideVarFields = [];
 		const variableFields = [];
-		(options?.fields || this.util.getTableFields(table)).forEach(field => {
-			if (field.type == 'glide_var' || field.type == 'variables') {
+		const journalFields = [];
+		this.util.getTableFields(table).forEach(field => {
+			if (field.type == 'glide_var') {
+				glideVarFields.push(field);
+			} else if (field.type == 'variables') {
 				variableFields.push(field);
-			} else {
-				fields.push(field.name);
+			} else if (!field.name.startsWith('sys_')) {
+				if (field.type == 'journal' || field.type == 'journal_input') {
+					journalFields.push(field);
+				} else if (!field.type.startsWith('journal')) {
+					fields.push(field.name);
+				}
+
+				// sys_* and journal_list fields are ignored
 			}
 		});
 
@@ -131,26 +145,76 @@ CodeSearchHandlerAny.prototype = {
 			}
 
 			return hits;
-		})(table, JSON.parse(fields), term, limit);`;
-		const hits = new Set(new GlideScopedEvaluator().evaluateScript(this.scriptGr, 'script', {
+		})(table, fields, term, limit);`;
+
+		const gse = new GlideScopedEvaluator();
+		gse.putVariable('fields', fields);
+		const hits = new Set(gse.evaluateScript(this.scriptGr, 'script', {
 			table: table,
-			fields: JSON.stringify(fields),
 			term: term,
 			limit: options?.limit || 0
 		}));
 
-		// Related List Query on sys_variable_value did not seem to work reliable,
-		// so we do the lookup in a dedicated query
-		if (variableFields.length) {
+		// Note: As scope is only relevant for metadata searches, there is scope handling
+		// inside this function because the metadata handler should have picked this up
+		// already (via extension point order)
+		if (glideVarFields.length) {
 			const variableGr = new GlideRecord('sys_variable_value');
 			variableGr.addQuery('document', table);
-			variableGr.addQuery('document_key', 'NOT IN', [...hits]);
 			variableGr.addNotNullQuery('document_key');
 			variableGr.addQuery('value', 'CONTAINS', term);
-			variableGr.addJoinQuery(table, 'document_key', 'sys_id');
 			variableGr.query();
 			while (variableGr.next()) {
 				hits.add(variableGr.getValue('document_key'));
+			}
+		}
+
+		if (variableFields.length) {
+			// the variables dictionary entry is active=false
+			// and because the tables the variable values are actually
+			// stored in seem to differ for each table using it:
+			// sc_req_item, sc_cart_item -> sc_item_option_mtom
+			// incidents, change_request, ... -> question_answer
+			const hierarchy = new GlideTableHierarchy(table).getTables();
+			if (hierarchy.includes('sc_req_item') || hierarchy.includes('sc_cart_item')) {
+				const optionGa = new GlideAggregate('sc_item_option_mtom');
+				optionGa.addQuery('sc_item_option.value', 'CONTAINS', term);
+				optionGa.addNotNullQuery('request_item');
+				optionGa.groupBy('request_item');
+				optionGa.query();
+				while (optionGa.next()) {
+					hits.add(optionGa.getValue('request_item'));
+				}
+
+				const mrvsAnswerGa = new GlideAggregate('sc_multi_row_question_answer');
+				mrvsAnswerGa.addQuery('value', 'CONTAINS', term);
+				mrvsAnswerGa.addQuery('parent_table_name', table);
+				mrvsAnswerGa.addNotNullQuery('parent_id');
+				mrvsAnswerGa.groupBy('parent_id');
+				mrvsAnswerGa.query();
+				while (mrvsAnswerGa.next()) {
+					hits.add(mrvsAnswerGa.getValue('parent_id'));
+				}
+			} else {			
+				const answerGa = new GlideAggregate('question_answer');
+				answerGa.addQuery('table_name', table);
+				answerGa.addQuery('value', 'CONTAINS', term);
+				answerGa.groupBy('table_sys_id');
+				answerGa.query();
+				while (answerGa.next()) {
+					hits.add(answerGa.getValue('table_sys_id'));
+				}
+			}
+		}
+
+		if (journalFields.length) {
+			const journalFieldGa = new GlideAggregate('sys_journal_field');
+			journalFieldGa.addQuery('name', table);
+			journalFieldGa.addQuery('value', 'CONTAINS', term);
+			journalFieldGa.groupBy('element_id');
+			journalFieldGa.query();
+			while (journalFieldGa.next()) {
+				hits.add(journalFieldGa.getValue('element_id'));
 			}
 		}
 
@@ -168,7 +232,7 @@ CodeSearchHandlerAny.prototype = {
 		return {
 			sys_class_name: anyGr.getRecordClassName(),
 			sys_id: anyGr.getUniqueValue(),
-			fields: this.util.toJSON(anyGr)
+			fields: this.util.toJSON(anyGr, options)
 		};
 	},
 
@@ -192,13 +256,13 @@ CodeSearchHandlerAny.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-12-05 18:00:53</sys_created_on>
         <sys_id>8e33344bc3edba14de14d8477d013145</sys_id>
-        <sys_mod_count>41</sys_mod_count>
+        <sys_mod_count>63</sys_mod_count>
         <sys_name>CodeSearchHandlerAny</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_8e33344bc3edba14de14d8477d013145</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-18 13:09:07</sys_updated_on>
+        <sys_updated_on>2025-12-28 21:52:31</sys_updated_on>
     </sys_script_include>
 </record_update>

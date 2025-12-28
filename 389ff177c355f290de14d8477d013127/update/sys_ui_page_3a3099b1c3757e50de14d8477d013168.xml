@@ -1,15 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
     <sys_ui_page action="INSERT_OR_UPDATE">
         <category>general</category>
-        <client_script><![CDATA[/* global document, GlideAjax, GlideModal, GlideUI */
+        <client_script><![CDATA[/* global window, GlideAjax, GlideModal */
 /* eslint no-undef: "error" */
 (function () {
-	var description = document.getElementById('searchgroup-description');
-	document.querySelector('select#searchgroup').addEventListener('change', function () {
-		description.innerText = this.selectedOptions[0].dataset.description || '';
+	const searchExtensions = window.document.getElementById('search-extensions');
+	const description = window.document.getElementById('searchgroup-description');
+	window.document.querySelector('select#searchgroup')
+		.addEventListener('change', function () {
+		const group = this.selectedOptions[0];
+		if (group.value != 'none') {
+			searchExtensions.removeAttribute('checked');
+			searchExtensions.setAttribute('disabled', '');
+		} else {
+			searchExtensions.removeAttribute('disabled');
+		}
+
+		description.innerText = group.dataset.description || '';
 		description.style.marginTop = description.innerText ? '1rem' : '';
-		var visibleContainerId = 'table-' + this.selectedOptions[0].value + '-container';
-		document.querySelectorAll('#table-select-container .table-container').forEach(function (container) {
+		const visibleContainerId = 'table-' + group.value + '-container';
+		window.document.querySelectorAll('#table-select-container .table-container')
+			.forEach((container) => {
 			if (container.id == visibleContainerId) {
 				container.style.display = '';
 			} else {
@@ -24,38 +35,42 @@ function clearSelections() {
 }
 
 function getResults() {
-	const term = document.getElementById('term').value;
+	const term = window.document.getElementById('term').value;
 	if (term) {
 		const errHandler = function (msg) {
-			GlideUI.get().addOutputMessage({ type: 'error', msg: msg });
+			window.GlideUI.get().addOutputMessage({ type: 'error', msg: msg });
 		};
 
-		var scope = document.getElementById('scope').value;
-		var group = document.getElementById('searchgroup').value;
-		var tableSysId = document.getElementById('table-' + group).value;
+		var scope = window.document.getElementById('scope').value;
+		var group = window.document.getElementById('searchgroup').value;
+		var extensions = window.document.getElementById('search-extensions').checked;
+		var tableSysId = window.document.getElementById('table-' + group).value;
 		if (tableSysId) {
-			fetch('/api/now/table/sys_db_object/' + tableSysId + '?sysparm_fields=name', {
+			window.fetch('/api/now/table/sys_db_object/' + tableSysId + '?sysparm_fields=name', {
 				headers: {
-					'X-UserToken': g_ck
+					'X-UserToken': window.g_ck
 				}
 			}).then(response => response.json()).then(json => {
-				startSearch(term, scope, group == 'none' ? '' : group, json.result.name, errHandler);
+				startSearch(term, {
+					table: json.result.name,
+					extensions: group == 'none' ? extensions : null,
+					group: group == 'none' ? '' : group,
+					scope
+				}, errHandler);
 			});
 		} else if (group != 'none') {
-			startSearch(term, scope, group, null, errHandler);
+			startSearch(term, { scope, group }, errHandler);
 		}
 	}
 
 	return false;
 }
 
-function startSearch(term, scope, group, table, errHandler) {
+function startSearch(term, context, errHandler) {
 	const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
 	ga.addParam('sysparm_name', 'startSearch');
 	ga.addParam('term', term);
-	ga.addParam('scope', scope);
-	ga.addParam('group', group);
-	ga.addParam('table', table);
+	ga.addParam('context', JSON.stringify(context));
 	ga.getXMLAnswer(function (result) {
 		result = JSON.parse(result);
 		if (result?.status != 'success') {
@@ -98,9 +113,6 @@ function startSearch(term, scope, group, table, errHandler) {
 		CodeSearchExampleUse: /nav_to.do?uri=sys_ui_page.do?sys_id=8bc77fb2d7120200b6bddb0c825203ac
 		CodeSearchExample: /nav_to.do?uri=sys_ui_macro.do?sys_id=9a7abeb2d7120200b6bddb0c82520308
 	-->
-	<g:requires name="styles/heisenberg/heisenberg_all.css" includes="true" />
-	<g:requires name="scripts/lib/jquery_includes.js" />
-	<g:requires name="scripts/heisenberg/heisenberg_all.js" />
 
 	<g:evaluate>
 		const tables = {};
@@ -113,110 +125,114 @@ function startSearch(term, scope, group, table, errHandler) {
 			(tables[group] ??= []).push(searchTableGr.table.toString());
 		}
 	</g:evaluate>
-	
+
 	<style>
 		form {
 			width: 600px;
 			margin: 20px auto 30px auto;
-			border: 1px solid rgba(0,0,0,0.2);
+			border: 1px solid rgba(0, 0, 0, 0.2);
 			padding: 35px;
-			box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+			box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
 			border-radius: 3px;
 		}
-		
+
 		label {
 			padding-top: 7px;
 		}
-		
+
 		.col-sm-9 {
 			padding-left: inherit;
 			padding-right: inherit;
 		}
-		
+
 		.footer-buttons {
 			display: block;
 			text-align: right;
-		} 
-		
-		#sn_codesearch_results {
-			padding: 20px 40px;
-			border-top: 1px solid #e8e8e8;
 		}
+
+		<j:if test="${!sn_ui.PolarisUI.canUsePolarisTemplates()}">
+		#search-extensions-container label.checkbox-label {
+			padding-bottom: 8px;
+		}
+		</j:if>
 	</style>
 
 	<g:ui_form>
-		<fieldset>
-			<div class="row form-group">
-				<label class="col-sm-3 control-label" for="searchgroup">Search Group</label>
+		<div class="row form-group">
+			<label class="col-sm-3 control-label" for="searchgroup">Search Group</label>
 
-				<span class="col-sm-9">
-					<select id="searchgroup" class="form-control" name="group">
-						<g:evaluate>
-							const searchGroupGr = new GlideRecord('sn_codesearch_search_group');
-							searchGroupGr.orderByDesc('sys_created_on');
-							searchGroupGr.query();
-						</g:evaluate>
-							<option value="none">-- None --</option>
-						<j:while test="${searchGroupGr.next()}">
-							<option value="${searchGroupGr.sys_id}" data-description="${searchGroupGr.description}">
-								${searchGroupGr.name}
-							</option>
-						</j:while>
-					</select>
-					<p id="searchgroup-description"></p>
-				</span>
-			</div>
-
-			<div class="row form-group" id="table-select-container">
-				<label class="col-sm-3 control-label" for="search-table">Search Table</label>
-				<span class="col-sm-9">
-					<div class="table-container" id="table-none-container">
-						<g:ui_reference name="table-none" table="sys_db_object" columns="name;sys_scope" order_by="name" />
-					</div>
-
+			<span class="col-sm-9">
+				<select id="searchgroup" class="form-control" name="group">
 					<g:evaluate>
+						const searchGroupGr = new GlideRecord('sn_codesearch_search_group');
+						searchGroupGr.orderByDesc('sys_created_on');
 						searchGroupGr.query();
 					</g:evaluate>
+					<option value="none">-- None --</option>
 					<j:while test="${searchGroupGr.next()}">
-						<div class="table-container" id="table-${searchGroupGr.sys_id}-container" style="display:none">
-							<g:ui_reference name="table-${searchGroupGr.sys_id}"
-								table="sys_db_object" columns="name;sys_scope" order_by="name"
-								query="nameIN${tables[searchGroupGr.name].join(',')}" />
-						</div>
+						<option value="${searchGroupGr.sys_id}" data-description="${searchGroupGr.description}">
+							${searchGroupGr.name}
+						</option>
 					</j:while>
+				</select>
+				<p id="searchgroup-description"></p>
+			</span>
+		</div>
+		<div class="row form-group" id="table-select-container">
+			<label class="col-sm-3 control-label" for="search-table">Search Table</label>
+			<span class="col-sm-9">
+				<div class="table-container" id="table-none-container">
+					<g:ui_reference name="table-none" table="sys_db_object" columns="name;sys_scope" order_by="name" />
+				</div>
+
+				<g:evaluate>
+					searchGroupGr.query();
+				</g:evaluate>
+				<j:while test="${searchGroupGr.next()}">
+					<div class="table-container" id="table-${searchGroupGr.sys_id}-container" style="display:none">
+						<g:ui_reference name="table-${searchGroupGr.sys_id}" table="sys_db_object"
+							columns="name;sys_scope" order_by="name"
+							query="nameIN${tables[searchGroupGr.name].join(',')}" />
+					</div>
+				</j:while>
+			</span>
+		</div>
+		<div class="row form-group" id="search-extensions-container">
+			<div class="col-sm-3"></div>
+			<div class="col-sm-9">
+				<span class="input-group-checkbox">
+					<input id="search-extensions" class="checkbox" type="checkbox" name="search-extensions" />
+					<label for="search-extensions" class="checkbox-label">Search Extensions$[SP]<span id="search-extensions-info">(only available if direct table search)</span></label>
 				</span>
 			</div>
+		</div>
+		<div class="row form-group">
+			<label for="term" class="control-label col-sm-3">Term</label>
+			<span class="col-sm-9 form-field">
+				<input id="term" class="form-control" type="text" placeholder="Type a term" name="term" />
+			</span>
+		</div>
+		<div class="row form-group">
+			<label class="col-sm-3 control-label" for="scope">Scope</label>
 
-			<div class="row form-group">
-				<label for="term" class="control-label col-sm-3">Term</label>
-				<span class="col-sm-9 form-field">
-					<input id="term" class="form-control" type="text" placeholder="Type a term" name="term" />
-				</span>
-			</div>
+			<span class="col-sm-9">
+				<g:evaluate>
+					const scopeGr = new GlideRecord('sys_scope');
+					scopeGr.addQuery('sys_id', gs.getCurrentApplicationId());
+					scopeGr.setLimit(1);
+					scopeGr.query();
+					scopeGr.next();
+				</g:evaluate>
+				<g:ui_reference name="scope" table="sys_scope" columns="name;scope" order_by="name"
+					value="${scopeGr.sys_id}" displayValue="${scopeGr.name}" />
+			</span>
+		</div>
 
-			<div class="row form-group">
-				<label class="col-sm-3 control-label" for="scope">Scope</label>
-
-				<span class="col-sm-9">
-					<g:evaluate>
-						const scopeGr = new GlideRecord('sys_scope');
-						scopeGr.addQuery('sys_id', gs.getCurrentApplicationId());
-						scopeGr.setLimit(1);
-						scopeGr.query();
-						scopeGr.next();
-					</g:evaluate>
-					<g:ui_reference name="scope" table="sys_scope" columns="name;scope" order_by="name" value="${scopeGr.sys_id}" displayValue="${scopeGr.name}" />
-				</span>
-			</div>		
-		</fieldset>
-		
-		<!-- the sn_codesearch_getResults and sn_codesearch_clearSelections function definitions are in the UI Page CodeSearchExampleUse -->
 		<div class="footer-buttons">
-			<g:dialog_buttons_ok_cancel ok="return getResults()" ok_id="ok_button" cancel_type="button" cancel="clearSelections()" />
+			<g:dialog_buttons_ok_cancel ok="return getResults()" ok_id="ok_button" cancel_type="button"
+				cancel="clearSelections()" />
 		</div>
 	</g:ui_form>
-	<div id="sn_codesearch_results">
-	</div>
 
 </j:jelly>]]></html>
         <name>search_async</name>
@@ -225,13 +241,13 @@ function startSearch(term, scope, group, table, errHandler) {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-12-14 11:48:12</sys_created_on>
         <sys_id>3a3099b1c3757e50de14d8477d013168</sys_id>
-        <sys_mod_count>51</sys_mod_count>
+        <sys_mod_count>73</sys_mod_count>
         <sys_name>search_async</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_ui_page_3a3099b1c3757e50de14d8477d013168</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-21 23:54:57</sys_updated_on>
+        <sys_updated_on>2025-12-28 21:45:06</sys_updated_on>
     </sys_ui_page>
 </record_update>

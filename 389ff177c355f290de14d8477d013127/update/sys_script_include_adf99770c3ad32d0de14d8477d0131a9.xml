@@ -39,31 +39,37 @@ CodeSearchHandlerMetadata.prototype = {
 	 * 
 	 * @static
 	 * @param {object} [context]
+	 * @param {string} [context.table]
+	 * @param {string} [context.group]
 	 * @param {string} [context.scope]
 	 * @returns {string[]}
 	 */
 	getHandledTables: function (context) {
+		const ignoredTables = gs.getProperty('x_itx_codesearch.ignored_tables', '')
+			.split(',')
+			.map(x => x.trim())
+			.filter(x => !!x);
+
 		if (context?.table) {
-			if (new GlideTableHierarchy(context.table).getRoot() == 'sys_metadata') {
+			const info = new GlideTableHierarchy(context.table);
+			if (!ignoredTables.includes(context.table) && info.getRoot() == 'sys_metadata') {
+				if (context.extensions) {
+					return info.getAllExtensions(context.table).filter(t => !ignoredTables.includes(t));
+				}
+
 				return [context.table];
 			}
 
 			return [];
 		}
 
-		const ignoredTables = gs.getProperty('x_itx_codesearch.ignored_tables', '')
-			.split(',')
-			.map(x => x.trim())
-			.filter(x => !!x);
-
 		const rootTables = new Set();
 		const tablePaths = []; // each table's inheritance from root to table
 		const searchedTables = [];
 		if (context?.group) {
-			// a group is considered an override to this handler:
-			// any application file table (and its child tables) will *not* be searched
-			// by this handler - the OOTB sn_codesearch.CodeSearch Script Include
-			// will search the table instead
+			// In the context of a group search, tables (and their child tables)
+			// which are part of a search group will be searched by the ootb
+			// search api and will therefore not be searched by this handler
 			const tableGr = new GlideRecord('sn_codesearch_table');
 			tableGr.addQuery('search_group', context.group);
 			tableGr.query();
@@ -158,19 +164,8 @@ CodeSearchHandlerMetadata.prototype = {
 	 * @returns {string[]}
 	 */
 	search: function (table, term, options) {
-		const fields = [];
-		const variableFields = [];
-		this.util.getTableFields(table).forEach(field => {
-			if (field.type == 'glide_var' || field.type == 'variables') {
-				variableFields.push(field);
-			} else if (field.name != 'sys_id') {
-				// lookup is done via ref_ to no generate cross scope privileges
-				fields.push('ref_' + table + '.' + field.name);
-			}
-		});
-
 		const hits = new Set();
-		// doing search on sys_metadata with INSTANCEOF operator to not create cross scope privilege
+		// Note: Lookup is done on sys_metadata and ref_ fields to not generate cross scope privileges
 		const metadataGr = new GlideRecord('sys_metadata');
 		metadataGr.addQuery('sys_class_name', table);
 
@@ -178,8 +173,17 @@ CodeSearchHandlerMetadata.prototype = {
 			metadataGr.addQuery('sys_scope', options.scope);
 		}
 
+		const variableFields = [];
 		const cond = metadataGr.addQuery('sys_id', term);
-		fields.forEach(field => cond.addOrCondition(field, 'CONTAINS', term));
+		this.util.getTableFields(table).forEach(field => {
+			if (field.type == 'glide_var') {
+				variableFields.push(field);
+			} else if (!field.name.startsWith('sys_')
+				&& field.type != 'variable'
+				&& !field.type.startsWith('journal')) {
+				cond.addOrCondition('ref_' + field.table + '.' + field.name, 'CONTAINS', term);
+			}
+		});
 
 		if (options?.limit) {
 			metadataGr.setLimit(options.limit);
@@ -190,38 +194,19 @@ CodeSearchHandlerMetadata.prototype = {
 			hits.add(metadataGr.getUniqueValue());
 		}
 
-		// Related List Query on sys_variable_value did not seem to work reliable,
-		// so we do the lookup in a dedicated query
+		// Note: Related List Query on sys_variable_value did not work reliably
 		if (variableFields.length) {
-			const variableGr = new GlideRecord('sys_variable_value');
-			variableGr.addQuery('document', table);
-			variableGr.addQuery('document_key', 'NOT IN', [...hits]);
-			variableGr.addNotNullQuery('document_key');
-			variableGr.addQuery('value', 'CONTAINS', term);
-			variableGr.addJoinQuery(table, 'document_key', 'sys_id');
-			variableGr.query();
+			const variableGr = new GlideRecord('x_itx_codesearch_metadata_variables');
+			variableGr.addQuery('var_value', 'CONTAINS', term);
+			variableGr.addQuery('meta_sys_class_name', table);
+
 			if (options?.scope) {
-				const variableHits = new Set();
-				while (variableGr.next()) {
-					variableHits.add(variableGr.getValue('document_key'));
-				}
+				variableGr.addQuery('meta_sys_scope', options.scope);
+			}
 
-				const metadataGr = new GlideRecord('sys_metadata');
-				metadataGr.addQuery('sys_scope', options.scope);
-				metadataGr.addQuery('sys_id', 'IN', [...variableHits]);
-
-				if (options.limit) {
-					metadataGr.setLimit(options.limit);
-				}
-
-				metadataGr.query();
-				while (metadataGr.next()) {
-					hits.add(metadataGr.getUniqueValue());
-				}
-			} else {
-				while (variableGr.next()) {
-					hits.add(variableGr.getValue('document_key'));
-				}
+			variableGr.query();
+			while (variableGr.next()) {
+				hits.add(variableGr.getValue('meta_sys_id'));
 			}
 		}
 
@@ -260,13 +245,13 @@ CodeSearchHandlerMetadata.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 06:23:04</sys_created_on>
         <sys_id>adf99770c3ad32d0de14d8477d0131a9</sys_id>
-        <sys_mod_count>26</sys_mod_count>
+        <sys_mod_count>38</sys_mod_count>
         <sys_name>CodeSearchHandlerMetadata</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_adf99770c3ad32d0de14d8477d0131a9</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-18 22:34:37</sys_updated_on>
+        <sys_updated_on>2025-12-28 21:48:50</sys_updated_on>
     </sys_script_include>
 </record_update>
