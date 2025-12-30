@@ -50,23 +50,10 @@ CodeSearchHandlerMetadata.prototype = {
 			.map(x => x.trim())
 			.filter(x => !!x);
 
-		if (context?.table) {
-			const info = new GlideTableHierarchy(context.table);
-			if (!ignoredTables.includes(context.table) && info.getRoot() == 'sys_metadata') {
-				if (context.extensions) {
-					return info.getAllExtensions(context.table).filter(t => !ignoredTables.includes(t));
-				}
-
-				return [context.table];
-			}
-
-			return [];
-		}
-
-		const rootTables = new Set();
-		const tablePaths = []; // each table's inheritance from root to table
 		const searchedTables = [];
 		if (context?.group) {
+			const rootTables = new Set();
+			const tablePaths = []; // each table's inheritance from root to table
 			// In the context of a group search, tables (and their child tables)
 			// which are part of a search group will be searched by the ootb
 			// search api and will therefore not be searched by this handler
@@ -74,27 +61,32 @@ CodeSearchHandlerMetadata.prototype = {
 			tableGr.addQuery('search_group', context.group);
 			tableGr.query();
 			while (tableGr.next()) {
+				// table search configurations might have been added prophylactically
+				// for tables which do not yet exist on the platform
 				const table = tableGr.table.toString();
-				if (table == 'x_itx_codesearch_st_metadata') {
-					rootTables.add('x_itx_codesearch_st_metadata');
-				} else {
+				if (gs.tableExists(table)) {
 					const hierarchy = new GlideTableHierarchy(table);
-					const root = hierarchy.getRoot();
-					if (root == 'sys_metadata') {
-						tablePaths.push(hierarchy.getTables().reverse());
-						rootTables.add(hierarchy.getRoot());
-					}
+					tablePaths.push(hierarchy.getTables().reverse());
+					rootTables.add(hierarchy.getRoot());
 				}
 			}
 
-			const util = new x_itx_codesearch.Utilities();
 			const tree = {
-				sys_metadata: util.getTableTree('sys_metadata')
+				sys_metadata: this.util.getTableTree('sys_metadata')
 			};
 
-			// add the ignored tables as well so that they can be removed from the tree
-			for (const table of ignoredTables) {
-				tablePaths.push(new GlideTableHierarchy(table).getTables().reverse());
+			// if the remote tables contained in overrides are present of the search group,
+			// their corresponding search handler already takes care of properly searching
+			// the underlying table (e.g. for flows), so this handler doesn't have to search them
+			const overrides = {
+				'x_itx_codesearch_st_flow': 'sys_hub_flow_block',
+				'x_itx_codesearch_st_flow_action': 'sys_hub_action_type_base'
+			};
+
+			for (const [remoteTable, metadataTable] of Object.entries(overrides)) {
+				if (rootTables.has(remoteTable)) {
+					tablePaths.push(new GlideTableHierarchy(metadataTable).getTables().reverse());
+				}
 			}
 
 			// remove the tables already covered from the tree
@@ -112,6 +104,22 @@ CodeSearchHandlerMetadata.prototype = {
 			});
 
 			searchedTables.push(...flatten(tree['sys_metadata']));
+		} else if (context?.table) {
+			const info = new GlideTableHierarchy(context.table);
+			if (info.getRoot() == 'sys_metadata') {
+				if (context.extensions) {
+					searchedTables.push(...info.getAllExtensions());
+				} else {
+					// bypass the ignore and scope check:
+					// - if the scope/application has no record of this table,
+					//   the search will immediately return
+					// - if the a ignored table was explicitly selected, do 
+					//   not override the user selection (e.g. from async search)
+					return [context.table];
+				}
+			}
+		} else {
+			searchedTables.push(...new GlideTableHierarchy('sys_metadata').getAllExtensions());
 		}
 
 		if (context?.scope) {
@@ -120,23 +128,15 @@ CodeSearchHandlerMetadata.prototype = {
 			ga.groupBy('sys_class_name');
 			ga.query();
 
-			const tables = [];
+			const tables = new Set();
 			while (ga.next()) {
-				tables.push(ga.getValue('sys_class_name'));
+				tables.add(ga.getValue('sys_class_name'));
 			}
 
-			if (searchedTables.length) {
-				// search group is defined
-				return tables.filter(t => searchedTables.includes(t));
-			} 
-
-			return tables.filter(t => !ignoredTables.includes(t));
+			return searchedTables.filter(t => tables.has(t) && !ignoredTables.includes(t));
 		}
 
-		// neither table, group or scope defined
-		return new GlideTableHierarchy('sys_metadata')
-			.getAllExtensions()
-			.filter(t => !ignoredTables.includes(t));
+		return searchedTables.filter(t => !ignoredTables.includes(t));
 
 		function flatten(obj, arr = []) {
 			for (const attr in obj) {
@@ -245,13 +245,13 @@ CodeSearchHandlerMetadata.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 06:23:04</sys_created_on>
         <sys_id>adf99770c3ad32d0de14d8477d0131a9</sys_id>
-        <sys_mod_count>38</sys_mod_count>
+        <sys_mod_count>53</sys_mod_count>
         <sys_name>CodeSearchHandlerMetadata</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_adf99770c3ad32d0de14d8477d0131a9</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-28 21:48:50</sys_updated_on>
+        <sys_updated_on>2025-12-30 18:38:04</sys_updated_on>
     </sys_script_include>
 </record_update>

@@ -9,7 +9,7 @@
         <mobile_callable>false</mobile_callable>
         <name>CodeSearchUtilClient</name>
         <sandbox_callable>false</sandbox_callable>
-        <script><![CDATA[/* global global */
+        <script><![CDATA[/* global global, gs, x_itx_codesearch */
 /* global Class, GlideScriptedHierarchicalWorker, GlideScriptedExtensionPoint */
 /* eslint no-undef: "error" */
 var CodeSearchUtilClient = Class.create();
@@ -22,21 +22,12 @@ CodeSearchUtilClient.prototype = Object.extendsObject(global.AbstractAjaxProcess
 		};
 
 		if (term) {
-			const worker = new GlideScriptedHierarchicalWorker();
-			worker.setProgressName('Intrux Code Search: ' + term);
-			worker.setScriptIncludeName('x_itx_codesearch.CodeSearchWorker');
-			worker.setScriptIncludeMethod('search');
-			worker.putMethodArg('term', term);
-			worker.putMethodArg('context', JSON.parse(this.getParameter('context')));
-			worker.setBackground(true);
-			worker.start();
-
-			result.execution_id = worker.getProgressID();
+			result.execution_id = x_itx_codesearch.CodeSearchWorker.start(term, JSON.parse(this.getParameter('context')));
 			if (result.execution_id) {
 				result.status = 'success';
 				result.message = '';
 			} else {
-				result.message = 'failed to start code search';
+				result.message = 'failed to start code search worker (insufficient privileges)';
 			}
 		} else {
 			result.message = 'term must be provided';
@@ -85,13 +76,13 @@ CodeSearchUtilClient.prototype = Object.extendsObject(global.AbstractAjaxProcess
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-28 23:18:46</sys_created_on>
         <sys_id>a357f9fcc3a9fe90de14d8477d0131a0</sys_id>
-        <sys_mod_count>15</sys_mod_count>
+        <sys_mod_count>18</sys_mod_count>
         <sys_name>CodeSearchUtilClient</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_a357f9fcc3a9fe90de14d8477d0131a0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-28 21:11:48</sys_updated_on>
+        <sys_updated_on>2025-12-30 18:07:36</sys_updated_on>
     </sys_script_include>
 </record_update>

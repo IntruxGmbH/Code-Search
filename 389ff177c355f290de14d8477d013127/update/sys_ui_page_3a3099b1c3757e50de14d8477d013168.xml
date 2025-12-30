@@ -28,6 +28,13 @@
 			}
 		});
 	});
+
+	const termLabel = window.document.querySelector('label[for=term]');
+	window.document.getElementById('term').addEventListener('change', function () {
+		termLabel
+			.closest('.is-required')
+			.classList[this.value ? 'add' : 'remove']('is-filled');
+	});
 })();
 
 function clearSelections() {	
@@ -124,6 +131,12 @@ function startSearch(term, context, errHandler) {
 			const group = searchTableGr.search_group.name.toString();
 			(tables[group] ??= []).push(searchTableGr.table.toString());
 		}
+
+		const metadataTableGr = new GlideRecord('sys_db_object');
+		metadataTableGr.addQuery('name', 'sys_metadata');
+		metadataTableGr.setLimit(1);
+		metadataTableGr.query();
+		metadataTableGr.next();
 	</g:evaluate>
 
 	<style>
@@ -159,7 +172,13 @@ function startSearch(term, context, errHandler) {
 
 	<g:ui_form>
 		<div class="row form-group">
-			<label class="col-sm-3 control-label" for="searchgroup">Search Group</label>
+			<div class="col-sm-3 control-label is-required is-filled">
+				<!-- no logic implemented to control is-filled currently,
+					the marker only exists to notify that this field is important 
+					(either search group or table must be selected)	
+				-->
+				<label class="required-marker" for="searchgroup">Search Group</label>
+			</div>
 
 			<span class="col-sm-9">
 				<select id="searchgroup" class="form-control" name="group">
@@ -179,10 +198,18 @@ function startSearch(term, context, errHandler) {
 			</span>
 		</div>
 		<div class="row form-group" id="table-select-container">
-			<label class="col-sm-3 control-label" for="search-table">Search Table</label>
+			<div class="col-sm-3 control-label is-required is-filled">
+				<!-- no logic implemented to control is-filled currently,
+					the marker only exists to notify that this field is important 
+					(either search group or table must be selected)	
+				-->
+				<label class="required-marker" for="">Search Table</label>
+			</div>
 			<span class="col-sm-9">
 				<div class="table-container" id="table-none-container">
-					<g:ui_reference name="table-none" table="sys_db_object" columns="name;sys_scope" order_by="name" />
+					<g:ui_reference table="sys_db_object" columns="name;sys_scope" order_by="name"
+						name="table-none"
+						value="${metadataTableGr.getUniqueValue()}" displayvalue="${metadataTableGr.getDisplayValue()}" />
 				</div>
 
 				<g:evaluate>
@@ -190,8 +217,8 @@ function startSearch(term, context, errHandler) {
 				</g:evaluate>
 				<j:while test="${searchGroupGr.next()}">
 					<div class="table-container" id="table-${searchGroupGr.sys_id}-container" style="display:none">
-						<g:ui_reference name="table-${searchGroupGr.sys_id}" table="sys_db_object"
-							columns="name;sys_scope" order_by="name"
+						<g:ui_reference table="sys_db_object" columns="name;sys_scope" order_by="name"
+							name="table-${searchGroupGr.sys_id}"
 							query="nameIN${tables[searchGroupGr.name].join(',')}" />
 					</div>
 				</j:while>
@@ -201,15 +228,17 @@ function startSearch(term, context, errHandler) {
 			<div class="col-sm-3"></div>
 			<div class="col-sm-9">
 				<span class="input-group-checkbox">
-					<input id="search-extensions" class="checkbox" type="checkbox" name="search-extensions" />
-					<label for="search-extensions" class="checkbox-label">Search Extensions$[SP]<span id="search-extensions-info">(only available if direct table search)</span></label>
+					<input id="search-extensions" class="checkbox" type="checkbox" name="search-extensions" checked="checked" />
+					<label for="search-extensions" class="checkbox-label">Search Extensions$[SP]<span id="search-extensions-info">(only available for direct table search)</span></label>
 				</span>
 			</div>
 		</div>
 		<div class="row form-group">
-			<label for="term" class="control-label col-sm-3">Term</label>
+			<div class="col-sm-3 control-label is-required">
+				<label for="term" class="required-marker">Term</label>
+			</div>
 			<span class="col-sm-9 form-field">
-				<input id="term" class="form-control" type="text" placeholder="Type a term" name="term" />
+				<input id="term" class="form-control" type="text" placeholder="Type a term" name="term" required="required" />
 			</span>
 		</div>
 		<div class="row form-group">
@@ -241,13 +270,13 @@ function startSearch(term, context, errHandler) {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-12-14 11:48:12</sys_created_on>
         <sys_id>3a3099b1c3757e50de14d8477d013168</sys_id>
-        <sys_mod_count>73</sys_mod_count>
+        <sys_mod_count>81</sys_mod_count>
         <sys_name>search_async</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_ui_page_3a3099b1c3757e50de14d8477d013168</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-28 21:45:06</sys_updated_on>
+        <sys_updated_on>2025-12-30 17:32:53</sys_updated_on>
     </sys_ui_page>
 </record_update>

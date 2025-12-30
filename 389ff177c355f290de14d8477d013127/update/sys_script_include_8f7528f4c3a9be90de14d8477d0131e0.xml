@@ -11,9 +11,27 @@
         <sandbox_callable>false</sandbox_callable>
         <script><![CDATA[/* global global, gs, x_itx_codesearch */
 /* global Set */
-/* global Class, GlideRecord, GlideTableHierarchy, GlideExecutionTracker */
+/* global Class, GlideRecord, GlideTableHierarchy, GlideScriptedHierarchicalWorker, GlideExecutionTracker */
 /* eslint no-undef: "error" */
 var CodeSearchWorker = Class.create();
+CodeSearchWorker.start = function (term, context) {
+	const worker = new GlideScriptedHierarchicalWorker();
+	worker.setProgressName('Intrux Code Search: ' + term);
+	worker.setScriptIncludeName('x_itx_codesearch.CodeSearchWorker');
+	worker.setScriptIncludeMethod('search');
+	worker.putMethodArg('term', term);
+	worker.putMethodArg('context', context);
+	worker.setBackground(true);
+
+	if (context?.scope) {
+		worker.setSourceTable('sys_scope');
+		worker.setSource(context.scope);
+	}
+
+	worker.start();
+
+	return worker.getProgressID();
+};
 CodeSearchWorker.prototype = {
 	initialize: function (trackerId) {
 		this.api = new x_itx_codesearch.CodeSearchAPI();
@@ -30,6 +48,15 @@ CodeSearchWorker.prototype = {
 		this.tracker_id = this.tracker.getSysID();
 	},
 
+	search: function (term, context) {
+		try {
+			this._search(term, context);
+		} catch (e) {
+			this._fail('Failed: ' + e);
+			gs.error(e.message + '\n' + global.NiceError._makeStackTraceFriendly(e));
+		}
+	},
+
 	/**
 	 * searches for a term for a given scope and search group.
 	 * 
@@ -39,8 +66,7 @@ CodeSearchWorker.prototype = {
 	 * @param {string} [context.scope]
 	 * @param {string} [context.group]
 	 */
-	search: function (term, context) {
-		try {
+	_search: function (term, context) {
 		let numAllHits = 0;
 		const tables = this.api.getSearchTables(context);
 		for (let i = 0; i < tables.length && !this._isCancelled(); i++) {
@@ -62,7 +88,7 @@ CodeSearchWorker.prototype = {
 			};
 			
 			if (result.hits.length) {
-				const child = this._createChild(`Table: ${table} for '${term}'`);
+				const child = this._createChild(`Table: ${table}`);
 				child.run();
 				child.updateResult(result);
 				const url = this.util.createTinyURL(`/${table}_list.do?sysparm_query=sys_idIN${result.hits.join(',')}`);
@@ -81,10 +107,6 @@ CodeSearchWorker.prototype = {
 		}
 
 		this._success(`Found ${numAllHits} records in ${tables.length} tables`);
-		} catch (e) {
-			this._fail('Failed: ' + e);
-			gs.info('MKR error: ' + e + '\n' + global.NiceError._makeStackTraceFriendly(e));
-		}
 	},
 
 	_createChild: function (name) {
@@ -197,13 +219,13 @@ CodeSearchWorker.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-28 17:55:52</sys_created_on>
         <sys_id>8f7528f4c3a9be90de14d8477d0131e0</sys_id>
-        <sys_mod_count>83</sys_mod_count>
+        <sys_mod_count>87</sys_mod_count>
         <sys_name>CodeSearchWorker</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_8f7528f4c3a9be90de14d8477d0131e0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-28 21:43:30</sys_updated_on>
+        <sys_updated_on>2025-12-30 18:06:16</sys_updated_on>
     </sys_script_include>
 </record_update>

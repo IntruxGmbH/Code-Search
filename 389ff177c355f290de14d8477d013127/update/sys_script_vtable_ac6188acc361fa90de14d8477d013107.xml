@@ -62,7 +62,7 @@
 	let limit = 100; // gs.getProperty('glide.script.vtable.max_rows', '1000')
 	
 	const util = new x_itx_codesearch.Utilities();
-	const query = util.transformRemoteTableQuery('flow', v_query.getEncodedQuery() + '');
+	const query = util.transformRemoteTableQuery('flow', v_query.getEncodedQuery());
 	
 	// it might be actually beneficial to search sys_hub_flow_base because this will search previous
 	// versions of flows - but currently this will make the same flow be appearing multiple times
@@ -82,10 +82,12 @@
 	flowGr.orderByDesc('sys_updated_on');
 	flowGr.query();
 
+	let msg = '';
 	const handler = new x_itx_codesearch.CodeSearchHandlerFlow();
 	while (flowGr.next()) {
 		const data = handler.toJSON(flowGr);
 		const dataStr = JSON.stringify(data, null, 4);
+		if (dataStr.includes('code_search')) msg += 'flow:' + flowGr.sys_id;
 		v_table.addRow({
 			sys_id: data.sys_id,
 			sys_class_name: flowGr.getRecordClassName(),
@@ -103,14 +105,14 @@
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
         <sys_id>ac6188acc361fa90de14d8477d013107</sys_id>
-        <sys_mod_count>7</sys_mod_count>
+        <sys_mod_count>12</sys_mod_count>
         <sys_name>ITX CodeSearch Flow</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_vtable_ac6188acc361fa90de14d8477d013107</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-18 20:23:04</sys_updated_on>
+        <sys_updated_on>2025-12-30 13:57:19</sys_updated_on>
         <table>x_itx_codesearch_st_flow</table>
         <update_script><![CDATA[(function executeUpdate(v_record, v_changed_fields) {
      // Parameters:

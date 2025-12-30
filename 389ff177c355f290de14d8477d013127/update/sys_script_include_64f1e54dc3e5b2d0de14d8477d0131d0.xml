@@ -22,7 +22,7 @@ Utilities.prototype = {
 		this.use_cache = gs.getProperty('x_itx_codesearch.use_cache') == 'true';
 		if (this.use_cache) {
 			// automatic cache clear when script is updated and the data structure changed
-			this.cache_version = '2';
+			this.cache_version = '1';
 			this._checkCache('table_columns');
 		}
 	},
@@ -116,6 +116,9 @@ Utilities.prototype = {
 		const children = {};
 
 		for (const child of new GlideTableHierarchy(table).getTableExtensions()) {
+			// GlideTableHierarchy::getTableExtensions returns grand(-grand...)-children
+			if (new GlideTableHierarchy(child).getBase() != table) continue;
+			
 			children[child] = this.getTableTree(child);
 		}
 		
@@ -231,13 +234,13 @@ Utilities.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 18:32:17</sys_created_on>
         <sys_id>64f1e54dc3e5b2d0de14d8477d0131d0</sys_id>
-        <sys_mod_count>38</sys_mod_count>
+        <sys_mod_count>40</sys_mod_count>
         <sys_name>Utilities</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_64f1e54dc3e5b2d0de14d8477d0131d0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-28 21:54:01</sys_updated_on>
+        <sys_updated_on>2025-12-30 16:01:01</sys_updated_on>
     </sys_script_include>
 </record_update>
