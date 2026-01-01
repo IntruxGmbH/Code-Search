@@ -34,52 +34,40 @@
 	/* global g_list, g_sysId, GlideUI */
 	/* global g_form, GlideAjax, GlideModal */
 	/* eslint no-undef: "error" */
-	if (typeof g_list !== 'undefined') {
-		var config = JSON.parse(g_sysId);
-		startSearch(config.term, config.scope, config.group, function (msg) {
-			GlideUI.get().addOutputMessage({ type: 'error', msg: msg });
-		});
-	} else {
-		var config = JSON.parse(g_form.getValue('data'));
-		startSearch(config.term, config.scope, config.group, g_form.addErrorMessage);
-	} 
+	var config = JSON.parse(g_form.getValue('data'));
+	const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
+	ga.addParam('sysparm_name', 'startSearch');
+	ga.addParam('term', config.term);
+	ga.addParam('context', JSON.stringify(config));
+	ga.getXMLAnswer(function (result) {
+		result = JSON.parse(result);
+		if (result?.status != 'success') {
+			g_form.addErrorMessage(result?.message || 'Unknown error on code search start');
+			return;
+		}
+		const dd = new GlideModal('hierarchical_progress_viewer', false, '40em', '10em');
+		dd.setTitle('Code Search for \'' + config.term + '\'');
+		dd.setPreference('sysparm_renderer_execution_id', result.execution_id);
 
-	function startSearch(term, scope, group, errHandler) {
-		const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
-		ga.addParam('sysparm_name', 'startSearch');
-		ga.addParam('term', term);
-		ga.addParam('scope', scope);
-		ga.addParam('group', group);
-		ga.getXMLAnswer(function (result) {
-			result = JSON.parse(result);
-			if (result?.status != 'success') {
-				errHandler(result?.message || 'Unknown error on code search start');
-				return;
+		let completed = false;
+		dd.on('executionComplete', function () {
+			completed = true;
+		});
+		dd.on('beforeclose', function () {
+			if (!completed) {
+				const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
+				ga.addParam('sysparm_name', 'cancelSearch');
+				ga.addParam('tracker', result.execution_id);
+				ga.addParam('message', 'cancelled (window closed)');
+				ga.getXMLAnswer(function (result) {
+					if (!result?.status == 'success') {
+						g_form.addErrorMessage(result?.message || 'Unknown error during search cancellation');
+					}
+				});
 			}
-			const dd = new GlideModal('hierarchical_progress_viewer', false, '40em', '10em');
-			dd.setTitle('Code Search for \'' + term + '\'');
-			dd.setPreference('sysparm_renderer_execution_id', result.execution_id);
-
-			let completed = false;
-			dd.on('executionComplete', function () {
-				completed = true;
-			});
-			dd.on('beforeclose', function () {
-				if (!completed) {
-					const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
-					ga.addParam('sysparm_name', 'cancelSearch');
-					ga.addParam('tracker', result.execution_id);
-					ga.addParam('message', 'cancelled (window closed)');
-					ga.getXMLAnswer(function (result) {
-						if (!result?.status == 'success') {
-							errHandler(result?.message || 'Unknown error during search cancellation');
-						}
-					});
-				}
-			});
-			dd.render();
 		});
-	}
+		dd.render();
+	});
 }]]></script>
         <show_insert>false</show_insert>
         <show_multiple_update>false</show_multiple_update>
@@ -91,7 +79,7 @@
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
         <sys_id>4027b57cc3a9fe90de14d8477d0131ac</sys_id>
-        <sys_mod_count>22</sys_mod_count>
+        <sys_mod_count>24</sys_mod_count>
         <sys_name>Start Search</sys_name>
         <sys_overrides/>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
@@ -99,7 +87,7 @@
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_ui_action_4027b57cc3a9fe90de14d8477d0131ac</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-18 19:42:36</sys_updated_on>
+        <sys_updated_on>2026-01-01 09:31:19</sys_updated_on>
         <table>x_itx_codesearch_st_metadata</table>
         <ui11_compatible>false</ui11_compatible>
         <ui16_compatible>false</ui16_compatible>

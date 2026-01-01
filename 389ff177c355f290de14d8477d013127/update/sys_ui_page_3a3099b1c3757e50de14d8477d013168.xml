@@ -252,8 +252,13 @@ function startSearch(term, context, errHandler) {
 					scopeGr.query();
 					scopeGr.next();
 				</g:evaluate>
+				<!-- Note:
+					The explicit query is required here because the ui_reference macro sets a jvar_query variable
+					which can (and in this case: is) carried over from the previous invocation of g:ui_reference
+				-->
 				<g:ui_reference name="scope" table="sys_scope" columns="name;scope" order_by="name"
-					value="${scopeGr.sys_id}" displayValue="${scopeGr.name}" />
+					value="${scopeGr.sys_id}" displayValue="${scopeGr.name}"
+					query="sys_id!=-1" />
 			</span>
 		</div>
 
@@ -270,13 +275,13 @@ function startSearch(term, context, errHandler) {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-12-14 11:48:12</sys_created_on>
         <sys_id>3a3099b1c3757e50de14d8477d013168</sys_id>
-        <sys_mod_count>81</sys_mod_count>
+        <sys_mod_count>93</sys_mod_count>
         <sys_name>search_async</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_ui_page_3a3099b1c3757e50de14d8477d013168</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-30 17:32:53</sys_updated_on>
+        <sys_updated_on>2026-01-01 09:46:00</sys_updated_on>
     </sys_ui_page>
 </record_update>

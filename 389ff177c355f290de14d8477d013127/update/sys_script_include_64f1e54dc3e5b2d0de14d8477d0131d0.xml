@@ -57,10 +57,11 @@ Utilities.prototype = {
 	transformRemoteTableQuery: function (target, query) {
 		const targetMatches = target + '=';
 		const targetDotWalk = target + '.';
-		return query.split(/(?<!\^)\^EQ/).map(eq => {
+		return this.transformQuery(query, 
+		/*return query.split(/(?<!\^)\^EQ/).map(eq => {
 			return eq.split(/(?<!\^)\^NQ/).map(nq => {
 				return nq.split(/(?<!\^)\^OR/).map(or => {
-					return or.split(/(?<!\^)\^/).map(and => {
+					return or.split(/(?<!\^)\^/).map(*/and => {
 						if (and.startsWith(targetMatches)) return and.replace(targetMatches, 'sys_id=');
 						else if (and.startsWith(targetDotWalk)) return and.replace(targetDotWalk, '');
 						else if (and.startsWith('sys_id')) return and;
@@ -69,6 +70,18 @@ Utilities.prototype = {
 						// ignore all other (only data?) conditions parts
 						// currently (due to caching), there is no need
 						// to implement this
+					})/*.filter(q => !!q).join('^');
+				}).filter(q => !!q).join('^OR');
+			}).filter(q => !!q).join('^NQ');
+		}).filter(q => !!q).join('^EQ')*/;
+	},
+
+	transformQuery: function (query, transformer) {
+		return query.split(/(?<!\^)\^EQ/).map(eq => {
+			return eq.split(/(?<!\^)\^NQ/).map(nq => {
+				return nq.split(/(?<!\^)\^OR/).map(or => {
+					return or.split(/(?<!\^)\^/).map(and => {
+						return transformer(and);
 					}).filter(q => !!q).join('^');
 				}).filter(q => !!q).join('^OR');
 			}).filter(q => !!q).join('^NQ');
@@ -234,13 +247,13 @@ Utilities.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 18:32:17</sys_created_on>
         <sys_id>64f1e54dc3e5b2d0de14d8477d0131d0</sys_id>
-        <sys_mod_count>40</sys_mod_count>
+        <sys_mod_count>41</sys_mod_count>
         <sys_name>Utilities</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_64f1e54dc3e5b2d0de14d8477d0131d0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-30 16:01:01</sys_updated_on>
+        <sys_updated_on>2025-12-31 19:05:02</sys_updated_on>
     </sys_script_include>
 </record_update>

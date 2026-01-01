@@ -69,6 +69,25 @@ CodeSearchAPI.prototype = {
 	},
 
 	/**
+	 * @param {string} table
+	 * @param {GlideElement | GlideDateTime | string} since
+	 * @param {object} context
+	 * @param {string} [context.scope]
+	 * @param {boolean} [context.extensions]
+	 * @returns {boolean}
+	 */
+	updatedSince: function (table, since, context) {
+		for (const handler of this.handlers) {
+			if (handler.handlesTable(table)) {
+				return handler.updatedSince(table, since, context);
+			}
+		}
+
+		gs.warn(`no handler to check updatedSince for table '${table}' found`);
+		return null;
+	},
+
+	/**
 	 * @param {GlideRecordGenerated} anyGr
 	 * @returns {object}
 	 */
@@ -101,13 +120,13 @@ CodeSearchAPI.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-25 21:48:48</sys_created_on>
         <sys_id>fb560ebfc395f290de14d8477d013175</sys_id>
-        <sys_mod_count>37</sys_mod_count>
+        <sys_mod_count>41</sys_mod_count>
         <sys_name>CodeSearchAPI</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_fb560ebfc395f290de14d8477d013175</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-30 17:34:14</sys_updated_on>
+        <sys_updated_on>2026-01-01 08:37:37</sys_updated_on>
     </sys_script_include>
 </record_update>

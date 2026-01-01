@@ -5,7 +5,12 @@
         <api_name>x_itx_codesearch.CodeSearchWorker</api_name>
         <caller_access/>
         <client_callable>false</client_callable>
-        <description/>
+        <description>The CodeSearchWorker reuses previous searches on two levels:&#13;
+1.) Table Search (CodeSearchWorker::start) &#13;
+-&gt; If a table hasn't been changed since the last search, don't start a new worker and simply display the last results&#13;
+2.) Group / Table+Extensions (CodeSearchWorker::_search)&#13;
+-&gt; If a table has searched, then check for each extension (respectively each table of a group) individually for updated since last search and reuse the search term if feasable.&#13;
+-&gt; Note: Checking each sys_metadata individually for updates is actually faster than a GlideAggregate with MAX aggregate on 'sys_updated_on'</description>
         <mobile_callable>false</mobile_callable>
         <name>CodeSearchWorker</name>
         <sandbox_callable>false</sandbox_callable>
@@ -14,7 +19,35 @@
 /* global Class, GlideRecord, GlideTableHierarchy, GlideScriptedHierarchicalWorker, GlideExecutionTracker */
 /* eslint no-undef: "error" */
 var CodeSearchWorker = Class.create();
+CodeSearchWorker.getLastSearch = function (term, context) {
+	const STATE_SUCCESSFULL = 2;
+	const executionGr = new GlideRecord('sys_execution_tracker');
+	executionGr.addQuery('name', 'Intrux Code Search: ' + term);
+	executionGr.addQuery('state', STATE_SUCCESSFULL);
+	if (context.scope) {
+		executionGr.addQuery('source_table', 'sys_scope');
+		executionGr.addQuery('source', context.scope);
+	}
+
+	executionGr.orderByDesc('sys_updated_on');
+	executionGr.setLimit(1);
+	executionGr.query();
+	executionGr.next();
+	return executionGr;
+};
 CodeSearchWorker.start = function (term, context) {
+	if (context.table) {
+		// if the table hasn't changed since the most recent search
+		// the worker can be used instead
+		const lastSearchGr = CodeSearchWorker.getLastSearch(term, context);
+		if (lastSearchGr.isValidRecord()) {
+			const api = new x_itx_codesearch.CodeSearchAPI();
+			if (!api.updatedSince(context.table, lastSearchGr.sys_created_on, context)) {
+				return lastSearchGr.getUniqueValue();
+			}
+		}
+	}
+
 	const worker = new GlideScriptedHierarchicalWorker();
 	worker.setProgressName('Intrux Code Search: ' + term);
 	worker.setScriptIncludeName('x_itx_codesearch.CodeSearchWorker');
@@ -52,8 +85,8 @@ CodeSearchWorker.prototype = {
 		try {
 			this._search(term, context);
 		} catch (e) {
+			gs.error(e.message + '\n' + global.NiceError._makeStackTraceFriendly(e.stack));
 			this._fail('Failed: ' + e);
-			gs.error(e.message + '\n' + global.NiceError._makeStackTraceFriendly(e));
 		}
 	},
 
@@ -68,6 +101,12 @@ CodeSearchWorker.prototype = {
 	 */
 	_search: function (term, context) {
 		let numAllHits = 0;
+
+		const lastSearchGr = (() => {
+			const lastSearchGr = CodeSearchWorker.getLastSearch(term, context);
+			if (lastSearchGr.isValidRecord()) return lastSearchGr;
+		})();
+
 		const tables = this.api.getSearchTables(context);
 		for (let i = 0; i < tables.length && !this._isCancelled(); i++) {
 			const table = tables[i];
@@ -78,21 +117,57 @@ CodeSearchWorker.prototype = {
 			}
 
 			this._updateMessage(`Searching '${table}'`);
-			const result = {
-				table: table,
-				term: term,
-				hits: this.api.search(table, term, {
+
+			const { result, message } = (() => {
+				if (lastSearchGr) {
+					if (!this.api.updatedSince(table, lastSearchGr.sys_created_on, context)) {
+						const executionGr = new GlideRecord('sys_execution_tracker');
+						executionGr.addQuery('parent', lastSearchGr.sys_id);
+						executionGr.addQuery('name', 'Table: ' + table);
+						executionGr.setLimit(1);
+						executionGr.query();
+						if (executionGr.next()) {
+							return {
+								result: JSON.parse(executionGr.result),
+								message: executionGr.message.toString()
+							};
+						}
+
+						// return empty results because the table hasn't been changed since the last search
+						// (empty results are not stored as execution trackers)
+						return {
+							result: {
+								hits: []
+							}
+						};
+					}
+				}
+
+				const hits = this.api.search(table, term, {
 					scope: context?.scope,
 					limit: this.limit ? Math.min(this.limit - numAllHits, 0) : undefined
-				})
-			};
-			
+				});
+
+				if (hits.length == 0) {
+					return {
+						result: {
+							hits: []
+						}
+					};
+				}
+
+				const url = this.util.createTinyURL(`/${table}_list.do?sysparm_query=sys_idIN${hits.join(',')}`);
+				return {
+					result: { table, term, hits },
+					message: `<a target="_blank" href="${url}">results ➚</a> (${hits.length} hits)`
+				};
+			})();
+				
 			if (result.hits.length) {
 				const child = this._createChild(`Table: ${table}`);
 				child.run();
-				child.updateResult(result);
-				const url = this.util.createTinyURL(`/${table}_list.do?sysparm_query=sys_idIN${result.hits.join(',')}`);
-				child.success(`<a target="_blank" href="${url}">results ➚</a> (${result.hits.length} hits)`);
+				child.updateResult(result); // needs to be a object!
+				child.success(message);
 				numAllHits += result.hits.length;
 			}
 
@@ -219,13 +294,13 @@ CodeSearchWorker.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-28 17:55:52</sys_created_on>
         <sys_id>8f7528f4c3a9be90de14d8477d0131e0</sys_id>
-        <sys_mod_count>87</sys_mod_count>
+        <sys_mod_count>97</sys_mod_count>
         <sys_name>CodeSearchWorker</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_8f7528f4c3a9be90de14d8477d0131e0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-30 18:06:16</sys_updated_on>
+        <sys_updated_on>2026-01-01 09:27:53</sys_updated_on>
     </sys_script_include>
 </record_update>

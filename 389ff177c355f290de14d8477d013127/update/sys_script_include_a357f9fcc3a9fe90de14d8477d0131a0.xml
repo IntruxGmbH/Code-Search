@@ -15,31 +15,35 @@
 var CodeSearchUtilClient = Class.create();
 CodeSearchUtilClient.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
 	startSearch: function () {
-		const term = this.getParameter('term');
 		const result = {
 			status: 'error',
-			messsage: 'unknown error'
+			message: 'unknown error'
 		};
 
-		if (term) {
-			result.execution_id = x_itx_codesearch.CodeSearchWorker.start(term, JSON.parse(this.getParameter('context')));
-			if (result.execution_id) {
-				result.status = 'success';
-				result.message = '';
+		try {
+			const term = this.getParameter('term');
+			if (term) {
+				result.execution_id = x_itx_codesearch.CodeSearchWorker.start(term, JSON.parse(this.getParameter('context')));
+				if (result.execution_id) {
+					result.status = 'success';
+					result.message = '';
+				} else {
+					result.message = 'failed to start code search worker (insufficient privileges)';
+				}
 			} else {
-				result.message = 'failed to start code search worker (insufficient privileges)';
+				result.message = 'term must be provided';
 			}
-		} else {
-			result.message = 'term must be provided';
+		} catch (e) {
+			gs.error(e.message + '\n' + global.NiceError._makeStackTraceFriendly(e.stack));
+			result.message = 'failed to start search: ' + e;
 		}
-
 		return JSON.stringify(result);
 	},
 
 	cancelSearch: function () {
 		const result = {
 			status: 'error',
-			messsage: 'unknown error'
+			message: 'unknown error'
 		};
 
 		const trackerSysID = this.getParameter('tracker');
@@ -50,21 +54,21 @@ CodeSearchUtilClient.prototype = Object.extendsObject(global.AbstractAjaxProcess
 				try {
 					// cancellation is not allowed in scoped apps
 					tracker.cancel(this.getParameter('message'));
-					result.messsage = '';
+					result.message = '';
 					result.status = 'success';
 				} catch (e) {
-					result.messsage = 'Failed to cancel tracker: ' + e;
+					result.message = 'Failed to cancel tracker: ' + e;
 				}
 			} else {
-				result.messsage = 'invalid tracker sys_id';
+				result.message = 'invalid tracker sys_id';
 			}*/
 			const ext = new GlideScriptedExtensionPoint().getExtensions('CodeSearchExt')[0];
 			ext.initialize();
 			ext.cancelTracker(trackerSysID, this.getParameter('message'));
-			result.messsage = '';
+			result.message = '';
 			result.status = 'success';
 		} else {
-			result.messsage = 'tracker must be provided';
+			result.message = 'tracker must be provided';
 		}
 
 		return JSON.stringify(result);
@@ -76,13 +80,13 @@ CodeSearchUtilClient.prototype = Object.extendsObject(global.AbstractAjaxProcess
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-28 23:18:46</sys_created_on>
         <sys_id>a357f9fcc3a9fe90de14d8477d0131a0</sys_id>
-        <sys_mod_count>18</sys_mod_count>
+        <sys_mod_count>21</sys_mod_count>
         <sys_name>CodeSearchUtilClient</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_a357f9fcc3a9fe90de14d8477d0131a0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-30 18:07:36</sys_updated_on>
+        <sys_updated_on>2026-01-01 09:30:52</sys_updated_on>
     </sys_script_include>
 </record_update>
