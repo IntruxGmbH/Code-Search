@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_extension_point">
     <sys_extension_point action="INSERT_OR_UPDATE">
         <api_name>x_itx_codesearch.CodeSearchHandler</api_name>
-        <description>A CodeSearchHandler must be able to search in a table for which it returned true when asked via "handlesTable". In addition, the handler must be able to serialize the record.&#13;
-All operations must be possible without creating new cross scope records.</description>
+        <description>A CodeSearchHandler must be able to:&#13;
+- search in a table for which it returned true when asked via "handlesTable"&#13;
+- serialize the record to JSON&#13;
+- not generated any additional cross scope records</description>
         <example><![CDATA[/* global gs */
 /* global Class, GlideRecord */
 /* eslint no-undef: "error" */
@@ -78,13 +80,13 @@ CodeSearchHandler.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 06:22:35</sys_created_on>
         <sys_id>a06997fcc36d32d0de14d8477d0131cb</sys_id>
-        <sys_mod_count>20</sys_mod_count>
+        <sys_mod_count>21</sys_mod_count>
         <sys_name>CodeSearchHandler</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_extension_point_a06997fcc36d32d0de14d8477d0131cb</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-01-01 08:28:33</sys_updated_on>
+        <sys_updated_on>2026-01-11 12:51:11</sys_updated_on>
     </sys_extension_point>
 </record_update>

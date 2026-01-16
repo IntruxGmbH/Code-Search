@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_itx_codesearch.CodeSearchHandlerTable</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>This handler searches the tables, fields and its related tables (licensing configuration and labels).&#13;
+Note: The var_dictionary table is marked as "handled" but not actually searched as this table represents the variables of "Glide Var" fields.</description>
+        <mobile_callable>false</mobile_callable>
+        <name>CodeSearchHandlerTable</name>
+        <sandbox_callable>false</sandbox_callable>
+        <script><![CDATA[/* global gs, x_itx_codesearch */
+/* global Class, GlideRecord, GlideAggregate, GlideTableHierarchy */
+/* eslint no-undef: "error" */
+var CodeSearchHandlerTable = Class.create();
+CodeSearchHandlerTable.prototype = {
+	TABLES: [
+		'sys_db_object',
+		'ua_table_licensing_config',
+		...new GlideTableHierarchy('sys_dictionary').getAllExtensions(),
+		'sys_choice_set',
+		'sys_documentation'
+	],
+
+	TABLE_SEARCH_FIELDS: [
+		'label',
+		'name',
+		'super_class'
+	],
+
+	DICTIONARY_FIELDS: [
+		'default_value',
+		'choice_table', 'choice_field',
+		'reference_qual', 'reference_qual_condition', 'reference_key', 'reference',
+		'dynamic_ref_qual', 
+		'function_definition', 'calculation'
+	],
+
+	CHOICE_SET_SEARCH_FIELDS: [
+		'name',
+		'element'
+	],
+
+	CHOICE_SEARCH_FIELDS: [
+		'value',
+		'label',
+		'dependent_value',
+		'hint'
+	],
+
+	CHOICE_JSON_FIELDS: [
+		'inactive',
+		'value',
+		'label',
+		'language',
+		'dependent_value',
+		'hint'
+	],
+
+	initialize: function () {
+		this.util = new x_itx_codesearch.Utilities();
+	},
+
+	/**
+	 * tables this handler can search and serialize
+	 * 
+	 * @static
+	 * @param {object} [context]
+	 * @param {string} [context.scope]
+	 * @returns {string[]}
+	 */
+	getHandledTables: function (context) {
+		if (context?.scope) {
+			const tables = [];
+			const tableGr = new GlideRecord('sys_db_object');
+			tableGr.addQuery('sys_scope', context.scope);
+			tableGr.setLimit(1);
+			tableGr.query();
+			if (tableGr.hasNext()) {
+				tables.push('sys_db_object');
+			}
+
+			const dictGa = new GlideAggregate('sys_dictionary');
+			dictGa.addQuery('sys_scope', context.scope);
+			dictGa.groupBy('sys_class_name');
+			dictGa.query();
+			while (dictGa.next()) {
+				tables.push(dictGa.getValue('sys_class_name'));
+			}
+
+			return tables;
+		}
+
+		return this.TABLES;
+	},
+
+	/**
+	 * test if this extensionpoint can search and serialize the given table
+	 * 
+	 * @param {string} table
+	 * @return {boolean}
+	 */
+	handlesTable: function (table) {
+		return this.TABLES.includes(table);
+	},
+
+	/**
+	 * get the SysIDs of records that match the record
+	 * 
+	 * @param {string} table
+	 * @param {string} term
+	 * @param {object} [options]
+	 * @param {object} [options.scope]
+ 	 * @param {number} [options.limit]
+	 * @returns {string[]}
+	 */
+	search: function (table, term, options) {
+		if (table == 'sys_documentation' || table == 'ua_table_licensing_config') {
+			// covered by the table search
+			// TODO: currently the intend of this handler is to not flood search results
+			// with dictionary, licensing and label results when searching for tables.
+			// But this might conflict when searching explictily inside a table.
+			// Possible solution:
+			// When doing a explicit search, set "options.table" and do not short circuit
+			return [];
+		}
+
+		if (table == 'sys_db_object') {
+			const tableGr = new GlideRecord('sys_db_object');
+			if (options?.scope) {
+				tableGr.addQuery('sys_scope', options.scope);
+			}
+			const cond = tableGr.addQuery('sys_id', term);
+			this.TABLE_SEARCH_FIELDS.forEach(field =>
+				cond.addOrCondition(field, 'CONTAINS', term)
+			);
+
+			tableGr.query();
+
+			const hits = [];
+			while (tableGr.next()) {
+				hits.push(tableGr.getUniqueValue());
+			}
+			
+			return hits;
+		} else if (new GlideTableHierarchy('sys_dictionary').getTableExtensions().includes(table)
+			&& !new GlideTableHierarchy(table).getTables().includes('var_dictionary')) {
+			// we do not search 'Glide var' fields as those are tied to configuration files
+			// which are searched when their parent record is searched
+			const dictGr = new GlideRecord('sys_dictionary');
+			dictGr.addQuery('sys_class_name', table);
+			if (options?.scope) {
+				dictGr.addQuery('sys_scope', options.scope);
+			}
+			const cond = dictGr.addQuery('sys_id', term);
+			this.util.getTableFields(table).forEach(field =>
+				cond.addOrCondition((field.table == 'sys_dictionary' ? '' : `ref_${field.table}.`) + field.name, 'CONTAINS', term)
+			);
+
+			dictGr.query();
+
+			const fieldHits = {};
+			while (dictGr.next()) {
+				(fieldHits[dictGr.getValue('name')] ??= []).push(dictGr.getUniqueValue());
+			}
+
+			const tableGr = new GlideRecord('sys_db_object');
+			tableGr.addQuery('name', 'IN', Object.keys(fieldHits));
+			tableGr.query();
+
+			const hits = [];
+			while (tableGr.next()) {
+				hits.push(tableGr.getUniqueValue());
+			}
+
+			return hits;
+		} else if (table == 'sys_choice_set') {
+			const choiceSetGr = new GlideRecord('sys_choice_set');
+			if (options?.scope) {
+				choiceSetGr.addQuery('sys_id', term);
+			}
+
+			const cond = choiceSetGr.addQuery('sys_id', term);
+			this.CHOICE_SET_SEARCH_FIELDS.forEach(field =>
+				cond.addOrCondition(field, 'CONTAINS', term)
+			);
+			
+			const choiceGa = new GlideAggregate('sys_choice');
+			const choiceCond = choiceGa.addQuery('sys_id', term);
+			this.CHOICE_SEARCH_FIELDS.forEach(field =>
+				cond.addOrCondition(field, 'CONTAINS', term)
+			);
+			choiceGa.groupBy('name');
+			choiceGa.groupBy('element');
+			choiceGa.query();
+			while (choiceGa.next()) {
+				choiceSetGr.addEncodedQuery('^NQname=' + choiceGa.getValue('name') + '^element=' + choiceGa.getValue('element'));
+			}
+
+			choiceSetGr.query();
+
+			const hits = [];
+			while (choiceSetGr.next()) {
+				hits.push(choiceSetGr.getUniqueValue());
+			}
+
+			return hits;
+		}
+
+		return [];
+	},
+
+	/**
+	 * @param {GlideRecordGenerated & sys_dictionary} dictGr
+	 * @param {object} options
+	 * @returns {object.<string, object>}
+	 */
+	dictToJSON: function (dictGr, options) {
+		const name = dictGr.getValue('element');
+
+		const dict = {};
+		if (name) dict.name = name;
+
+		this.DICTIONARY_FIELDS.forEach(f => {
+			const value = dictGr.getValue(f);
+			if (value) {
+				dict[f] = value;
+			}
+		});
+
+		return dict;
+	},
+
+	/**
+	 * @param {GlideRecordGenerated & sys_db_object} tableGr
+	 * @param {object} options
+	 * @returns {{table: string, fields: object[]}}
+	 */
+	tableToJSON: function (tableGr, options) {
+		const dictGr = new GlideRecord('sys_dictionary');
+		dictGr.addQuery('name', tableGr.name);
+		dictGr.orderBy('element');
+		dictGr.query();
+
+		const fields = {};
+		while (dictGr.next()) {
+			// Note: name might be null (collection) which is actually desired
+			// because we also want to JSON'ify the collection entry (attributes!)
+			const name = dictGr.getValue('element');	
+			fields[name] = this.dictToJSON(dictGr, options);
+		}
+
+		const json = {
+			table: tableGr.name.toString(),
+			fields: fields
+		};
+
+		if (Object.keys(json.fields['null']).length == 0) {
+			// remove the collection entry if it doesn't contain anything
+			// (should only contains the attributes value)
+			delete json.fields['null'];
+		}
+
+		return json;
+	},
+
+	addLabels: function (table, field, json) {
+		const docGr = new GlideRecord('sys_documentation');
+		docGr.addQuery('name', table);
+		if (field) docGr.addQuery('element', field);
+		docGr.query();
+		while (docGr.next()) {
+			const field = docGr.getValue('element');
+			if (field in json) {
+				// field can be null in which case this is the table-lable
+				const label = this.util.toJSON(docGr);
+				delete label.name;
+				delete label.element;
+				delete label.sys_id;
+
+				if (field) (json[field].labels ??= []).push(label);
+				else ((field ? json.fields[field] : json).labels ??= []).push(label);
+			}
+		}
+	},
+
+	addChoices: function (table, fields, json) {
+		const choiceGr = new GlideRecord('sys_choice');
+		choiceGr.addQuery('name', table);
+
+		let fn = null;
+		if (Array.isArray(fields)) {
+			choiceGr.addQuery('element', 'IN', fields);
+			fn = (name, choice) => (json.fields[name].choices ??= []).push(choice);
+		} else if (fields == null) {
+			fn = (name, choice) => json[name] = choice;
+		} else {
+			choiceGr.addQuery('element', fields);
+			fn = (name, choice) => (json.choices ??= []).push(choice);
+		}
+
+		choiceGr.orderBy('sequence');
+		choiceGr.query();
+		while (choiceGr.next()) {
+			const choice = this.util.toJSON(choiceGr);
+			delete choice.name;
+			delete choice.element;
+			delete choice.sys_id;
+
+			const name = choiceGr.getValue('element');
+			fn(name, choice);
+		}
+	},
+
+	/**
+	 * Convert the given record to JSON data structure suitable to be used in a code search.
+	 * 
+	 * @param {GlideRecordGenerated & sys_metadata} metadataGr
+	 * @param {object} options
+	 * @returns {JSON}
+	 */
+	toJSON: function (metadataGr, options) {
+		const table = metadataGr.getTableName();
+		if (table == 'sys_db_object') {
+			const json = this.tableToJSON(metadataGr, options);
+			this.addLabels(metadataGr.name, null, json);
+			this.addChoices(metadataGr.name, Object.keys(json.fields), json);
+
+			// json.fields is a key-value object already storing the name of the field
+			for (const attrs of Object.values(json.fields)) {
+				delete attrs.name;
+			}
+
+			return json;
+		} else if (table == 'sys_choice_set') {
+			const json = {
+				table: metadataGr.getValue('name'),
+				field: metadataGr.getValue('element')
+			};
+			this.addChoices(json.table, null, json);
+			return json;
+		} else if (new GlideTableHierarchy(table).getAllExtensions().includes('sys_dictionary')) {
+			const json = this.dictToJSON(metadataGr, options);
+			this.addLabels(metadataGr.name, metadataGr.element, json);
+			this.addChoices(metadataGr.name, metadataGr.element, json);
+			return json;
+		}
+
+		// ua_table_licensing_config, sys_documentation
+		return this.util.toJSON(metadataGr, options);
+	},
+
+	/**
+	 * @param {string} table
+	 * @param {GlideElement | GlideDateTime | string} since
+	 * @param {object} context
+	 * @param {string} [context.scope]
+	 * @returns {boolean}
+	 */
+	updatedSince: function (table, since, context) {
+		// Note: All tables handled by this scope are metadata!
+		const metadataGr = new GlideRecord('sys_metadata');
+		metadataGr.addQuery('sys_class_name', table);
+		metadataGr.addQuery('sys_updated_on', '>', since);
+		if (context.scope) {
+			metadataGr.addQuery('sys_scope', context.scope);
+		}
+
+		metadataGr.setLimit(1);
+		metadataGr.query();
+		return metadataGr.hasNext();
+	},
+
+	type: 'CodeSearchHandlerTable'
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2026-01-10 20:30:43</sys_created_on>
+        <sys_id>c4cea622c31e7e10de14d8477d013160</sys_id>
+        <sys_mod_count>30</sys_mod_count>
+        <sys_name>CodeSearchHandlerTable</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_script_include_c4cea622c31e7e10de14d8477d013160</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2026-01-16 10:46:52</sys_updated_on>
+    </sys_script_include>
+</record_update>

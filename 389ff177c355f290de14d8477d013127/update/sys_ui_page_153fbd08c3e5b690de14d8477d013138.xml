@@ -28,26 +28,54 @@
         <direct>false</direct>
         <endpoint>x_itx_codesearch_about.do</endpoint>
         <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
-<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
-	<p>Intrux Code Search</p>
-	<p>Features</p>
-	<ul>
-		<li>Search Flows</li>
-		<li>Search Flow Actions</li>
-		<li>Search Workflows</li>
-		<li>Search Form (and Annotations)</li>
-		<li>Search all other application files (fallback handler)</li>
-		<li>Code Search in background (no blocked user session)</li>
-		<li><a target="_blank" href="/nav_to.do?uri=sys_client_extension_point.do?sys_id=e4a25540c3ed7690de14d8477d0131cb">Fix</a> Classic Studio Code Search</li>
-	</ul>
+<j:jelly trim="false"
+	xmlns:j="jelly:core"
+	xmlns:g="glide"
+	xmlns:j2="null"
+	xmlns:g2="null">
+
+	<h2>Intrux Code Search</h2>
+
 	<p>
-		Changelog:
-		<ul>
-			<li>1.0: Initial Release</li>
-		</ul>
+		Intrux Code Search extends and unlocks ServiceNow's out-of-the-box code search capabilities,
+		providing fast, comprehensive, and non-blocking search across your entire instance.
 	</p>
-	<p><a target="blank" href="https://intrux.swiss">https://intrux.swiss</a></p>
-	<p><a href="mailto:info@intrux.ch">info@intrux.ch</a></p>
+
+	<h3>Key Features</h3>
+	<ul>
+		<li><strong>Universal Code Search</strong>$[SP]across scripts, configurations, and metadata</li>
+		<li><strong>Flow Designer</strong>$[SP]and$[SP]<strong>UI Builder</strong>$[SP]support</li>
+		<li><strong>Automatic coverage</strong>$[SP]for newly created tables and fields</li>
+		<li>Non-blocking code search running in$[SP]<a target="_blank" href="/nav_to.do?uri=x_itx_codesearch_search_async.do">background</a></li>
+		<li>Optional$[SP]<a target="_blank" href="/nav_to.do?uri=sys_client_extension_point.do?sys_id=e4a25540c3ed7690de14d8477d0131cb">fix</a>$[SP]for Classic Studio Code Search limitations</li>
+	</ul>
+
+	<h3>Changelog</h3>
+	<ul>
+		<li>
+			<strong>1.1</strong>$[SP]Table and Field support
+		</li>
+		<li>
+			<strong>1.0</strong>$[SP]Initial release
+			<ul>
+				<li>Flow Designer support</li>
+				<li>UI Builder support</li>
+				<li>Workflow support</li>
+				<li>Form and List support</li>
+			</ul>
+		</li>
+	</ul>
+
+	<hr/>
+
+	<p>
+		<strong>Website:</strong>$[SP]<a target="_blank" href="https://intrux.swiss">https://intrux.swiss</a>
+	</p>
+
+	<p>
+		<strong>Contact:</strong>$[SP]<a href="mailto:info@intrux.ch">info@intrux.ch</a>
+	</p>
+
 </j:jelly>]]></html>
         <name>about</name>
         <processing_script/>
@@ -55,13 +83,13 @@
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-26 17:04:04</sys_created_on>
         <sys_id>153fbd08c3e5b690de14d8477d013138</sys_id>
-        <sys_mod_count>13</sys_mod_count>
+        <sys_mod_count>27</sys_mod_count>
         <sys_name>about</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_ui_page_153fbd08c3e5b690de14d8477d013138</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-22 17:45:34</sys_updated_on>
+        <sys_updated_on>2026-01-11 12:33:02</sys_updated_on>
     </sys_ui_page>
 </record_update>

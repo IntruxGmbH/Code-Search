@@ -49,74 +49,95 @@
      //      v_record.setLastErrorMessage(message);
      //  }
   })(v_record);]]></insert_script>
-        <name>ITX CodeSearch Flow</name>
+        <name>ITX CodeSearch Table</name>
         <script><![CDATA[(function executeQuery(v_table, v_query) {
-
-	/* global x_itx_codesearch */
-	/* global GlideRecord */
+	/* global gs, x_itx_codesearch */
+	/* global GlideRecord, GlideAggregate */
 	/* eslint no-undef: "error" */
-
-	// flow2json for Flow Designer Flows and Subflows
-	//
-	// due to performance reasons, non-filtered queries will be limited to:
-	let limit = 100; // gs.getProperty('glide.script.vtable.max_rows', '1000')
 	
 	const util = new x_itx_codesearch.Utilities();
-	const query = util.transformRemoteTableQuery('flow', v_query.getEncodedQuery());
+	const query = util.transformRemoteTableQuery('table', v_query.getEncodedQuery());
 	
-	// it might be actually beneficial to search sys_hub_flow_base because this will search previous
-	// versions of flows - but currently this will make the same flow be appearing multiple times
-	// TODO: figure out how to skip irrelevant flow snapshots
-	const flowGr = new GlideRecord('sys_hub_flow');
+	const tableGr = new GlideRecord('sys_db_object');
 	if (query) {
-		flowGr.addEncodedQuery(query);
+		tableGr.addEncodedQuery(query);
 	}
 
-	if (/^(flow\.)?sys_id=[a-z0-9]{32}$/.test(query)) {
-		// optimize direct SysID lookups
-		flowGr.setLimit(1);
-	} else if (limit != -1) {
-		flowGr.setLimit(limit);
+	if (/^(table\.)?sys_id=[a-z0-9]{32}$/.test(query)) {
+		tableGr.setLimit(1);
+	} else {
+		tableGr.setLimit(100);
 	}
 
-	// Note: Except some fields like description, we cannot do any pre-filtering here
-	// as most of the core logic is encoded in non-searchable fields.
-	// As the actual filtering is done by the calling mechanisms (remote table) anyways
-	// we will just fill the cache with the results.
-	// If more than the remote table is returned here the search needs to be narrowed done anyways.
-	flowGr.orderByDesc('sys_updated_on');
-	flowGr.query();
+	const dataCondition = v_query.getCondition('data');
+	const term = dataCondition?.startsWith('dataCONTAINS')
+		? dataCondition.substring('dataCONTAINS'.length)
+		: dataCondition?.startsWith('dataLIKE')
+		? dataCondition.substring('dataLIKE'.length)
+		: '';
 
-	const handler = new x_itx_codesearch.CodeSearchHandlerFlow();
-	while (flowGr.next()) {
-		const data = handler.toJSON(flowGr);
+	if (!term && !tableGr.getEncodedQuery()) {
+		gs.addErrorMessage('Please specify a search term (Data) or table-filter (Table)');
+		return;
+	}
+
+	if (term) {
+		const tableCond = tableGr.addQuery('sys_id', term);
+		util.getTableFields('sys_db_object').forEach(field =>
+			tableCond.addOrCondition(field.name, 'CONTAINS', term)
+		);
+
+		// search tables building the table's data structure (fields, labels and choice values)
+		['sys_documentation', 'sys_dictionary', 'sys_choice_set', 'sys_choice'].forEach(table => {
+			const anyGa = new GlideAggregate(table);
+			const cond = anyGa.addQuery('sys_id', term);
+			const fields = util.getTableFields(table);
+			fields.forEach(field => {
+				if (field.name != 'name') {
+					// name field can be ignored -> already covered by tableGr
+					cond.addOrCondition(field.name, 'CONTAINS', term);
+				}
+			});
+			anyGa.groupBy('name');
+			anyGa.query();
+			while (anyGa.next()) {
+				tableCond.addOrCondition('name', anyGa.getValue('name'));		
+			}
+		});
+	}
+
+	tableGr.orderByDesc('sys_updated_on');
+	tableGr.query();
+
+	const handler = new x_itx_codesearch.CodeSearchHandlerTable();
+	while (tableGr.next()) {
+		const data = handler.toJSON(tableGr);
 		const dataStr = JSON.stringify(data, null, 4);
 		v_table.addRow({
-			sys_id: data.sys_id,
-			sys_class_name: flowGr.getRecordClassName(),
-			sys_scope: flowGr.getValue('sys_scope'),
-			flow: data.sys_id,
+			sys_id: tableGr.getUniqueValue(),
+			sys_class_name: tableGr.getRecordClassName(),
+			sys_scope: tableGr.getValue('sys_scope'),
+			table: tableGr.getUniqueValue(),
 			data: dataStr,
 			actions: 'c838fd22c371f690de14d8477d013160'
 		});
 	}
- 
   })(v_table, v_query); /* global v_table, v_query */]]></script>
         <sys_class_name>sys_script_vtable</sys_class_name>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
-        <sys_created_on>2025-11-27 20:02:38</sys_created_on>
+        <sys_created_on>2026-01-13 12:23:13</sys_created_on>
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
-        <sys_id>ac6188acc361fa90de14d8477d013107</sys_id>
-        <sys_mod_count>14</sys_mod_count>
-        <sys_name>ITX CodeSearch Flow</sys_name>
+        <sys_id>e2871063c316f650de14d8477d0131d5</sys_id>
+        <sys_mod_count>11</sys_mod_count>
+        <sys_name>ITX CodeSearch Table</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
-        <sys_update_name>sys_script_vtable_ac6188acc361fa90de14d8477d013107</sys_update_name>
+        <sys_update_name>sys_script_vtable_e2871063c316f650de14d8477d0131d5</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-01-13 12:43:45</sys_updated_on>
-        <table>x_itx_codesearch_st_flow</table>
+        <sys_updated_on>2026-01-13 18:48:36</sys_updated_on>
+        <table>x_itx_codesearch_st_table</table>
         <update_script><![CDATA[(function executeUpdate(v_record, v_changed_fields) {
      // Parameters:
      //    v_record - a map of field names and values containing the sys_id of the record

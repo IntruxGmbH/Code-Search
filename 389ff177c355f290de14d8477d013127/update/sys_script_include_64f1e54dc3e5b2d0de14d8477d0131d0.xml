@@ -31,7 +31,6 @@ Utilities.prototype = {
 		if (sn_scoped_cache.ScopedCacheManager.get(cache, 'cache_version') != this.cache_version) {
 			sn_scoped_cache.ScopedCacheManager.flushScopedCache(cache);
 			sn_scoped_cache.ScopedCacheManager.put(cache, 'cache_version', this.cache_version);
-			gs.info(`clearing cache ${cache} - upgrading to cache version ${this.cache_version}`);
 		}
 	},
 
@@ -143,6 +142,45 @@ Utilities.prototype = {
 	 * @returns {{ name: string, value: string }[]}
 	 */
 	toJSON: function (anyGr) {
+		const fields = {};
+		anyGr.getElements().forEach((element) => {
+			const ge = element.getED();
+			const name = ge.getName();
+			if (name.startsWith('sys_') && name != 'sys_id') return;
+
+			const type = ge.getInternalType();
+			// gziped fields typically have this length (and usually there is only a single such field)
+			if (type == 'string') {
+				const value = element.toString();
+				if (!value) return;
+
+				fields[name] = ge.getLength() == 16777215 && value.startsWith('H4sIAAAAAAAA')
+					? this.deflateFields(value)
+					: value
+				;
+			} else if (type == 'glide_var' || type == 'variables') {
+				fields[name] = this.glideVarFields(element);
+			} else {
+				const value = element.toString();
+				if (!value) return;
+
+				const display = element.getDisplayValue();
+				if (display && display != value) {
+					fields[name] = { value, display };
+				} else {
+					fields[name] = value;
+				}
+			}
+		});
+
+		return fields;
+	},
+
+	/**
+	 * @param {GlideRecordGenerated} anyGr
+	 * @returns {{ name: string, value: string }[]}
+	 */
+	toJSON_old: function (anyGr) {
 		const fields = [];
 		anyGr.getElements().forEach((element) => {
 			const ge = element.getED();
@@ -247,13 +285,13 @@ Utilities.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 18:32:17</sys_created_on>
         <sys_id>64f1e54dc3e5b2d0de14d8477d0131d0</sys_id>
-        <sys_mod_count>41</sys_mod_count>
+        <sys_mod_count>44</sys_mod_count>
         <sys_name>Utilities</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_64f1e54dc3e5b2d0de14d8477d0131d0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-31 19:05:02</sys_updated_on>
+        <sys_updated_on>2026-01-15 15:51:08</sys_updated_on>
     </sys_script_include>
 </record_update>
