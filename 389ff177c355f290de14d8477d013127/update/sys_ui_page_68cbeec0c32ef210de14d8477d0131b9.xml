@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script/>
+        <description/>
+        <direct>false</direct>
+        <endpoint>x_itx_codesearch_documentation.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+
+	<script src="sys_attachment.do?sys_id=82ab6ac0c32ef210de14d8477d01319b"></script>
+	<p>The Intrux Code Search hooks into the OOTB Studio Search by adding a custom remote table which ensures that all application files of the given scope are searched.</p>
+	<p>In theory the search groups can be used to group searches
+	into relationships like "Client Side", "Server Side", etc.
+	but in practice because scopes are typically smaller and therefore
+	searched very fast, this does not offer a lots of advantages.
+	On top, there is not even a way of changing the search group in the studio.
+	Also, the studio searches tables wether or not they exist for the given scope or not, wasting lot of time.</p>
+	<p>The Background Search is optimized so that only the tables for the given scope are searched.
+	This is acomplished by iterating over all search handlers to first detect the tables which need to be actually searched in the given hierarchy.
+	Afterwards all tables are searched using the specialized search handler (if it exists). If no specialized handler exists, the fallback handler is used.
+	One exists for application files and one for data - both search all fields on the table, this guarantees there are no blind spots, even for custom configuration tables.</p>
+	
+	<pre class="mermaid">
+            graph TD
+            User[Background Search] --> SH[CodeSearchHandlers]
+            SH --> MH[Metadata Handler]
+            SH --> FH[Flow Handler]
+			SH --> TH[Table Handler]
+			TH --> sys_db_object[Tables]
+			TH --> sys_dictionary[Fields]
+			TH --> sys_choice[Choices]
+			TH --> sys_documentation[Labels]
+			FH --> sys_hub_flow[Flows]
+			FH --> FS[Flow Steps]
+			MH --> sys_metadata[Application Files]
+    </pre>
+
+</j:jelly>]]></html>
+        <name>documentation</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2026-01-15 12:09:39</sys_created_on>
+        <sys_id>68cbeec0c32ef210de14d8477d0131b9</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>documentation</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_ui_page_68cbeec0c32ef210de14d8477d0131b9</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2026-01-16 11:12:09</sys_updated_on>
+    </sys_ui_page>
+</record_update>
