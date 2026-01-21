@@ -31,43 +31,80 @@
         <onclick>startCodeSearch()</onclick>
         <order>100</order>
         <script><![CDATA[function startCodeSearch() {
-	/* global g_list, g_sysId, GlideUI */
-	/* global g_form, GlideAjax, GlideModal */
+	/* global window, Promise, setTimeout, fetch, g_ck, g_sysId, GlideUI, g_form, GlideAjax, GlideModal */
 	/* eslint no-undef: "error" */
-	var config = JSON.parse(g_form.getValue('data'));
-	const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
-	ga.addParam('sysparm_name', 'startSearch');
-	ga.addParam('term', config.term);
-	ga.addParam('context', JSON.stringify(config));
-	ga.getXMLAnswer(function (result) {
-		result = JSON.parse(result);
-		if (result?.status != 'success') {
-			g_form.addErrorMessage(result?.message || 'Unknown error on code search start');
-			return;
+	const wind = typeof window !== 'undefined' && window || new Promise((resolve) => setTimeout(function () { resolve(this); }));
+	const { config, errorHandler } = (() => {
+		if (typeof g_list !== 'undefined') {
+			return {
+				config: fetch('/api/now/table/x_itx_codesearch_st_metadata/' + g_sysId + '?sysparm_fields=data', {
+						headers: {
+							'X-UserToken': g_ck
+						}
+					})
+					.then(resp => resp.json())
+					.then(json => JSON.parse(json.result.data)),
+				errorHandler: function (msg) {
+					GlideUI.get().addOutputMessage({ type: 'error', msg: msg });
+				}
+			};
 		}
-		const dd = new GlideModal('hierarchical_progress_viewer', false, '40em', '10em');
-		dd.setTitle('Code Search for \'' + config.term + '\'');
-		dd.setPreference('sysparm_renderer_execution_id', result.execution_id);
+		
+		return {
+			config: JSON.parse(g_form.getValue('data')),
+			errorHandler: g_form.addErrorMessage
+		};
+	})();
+	
+	Promise.all([wind, config, errorHandler])
+		.then(([$window, config, errorHandler]) => 
+			_startCodeSearch($window, config, errorHandler)
+		);
+	
+	function _startCodeSearch($window, config, errorHandler) {
+		const searches = [];
+		const channel = ($window.g_ambClient || $window.top.g_ambClient).getChannel('/x_itx_codesearch/start');
+		const addSearchFn = function (message) { searches.push(message.data); };
+		channel.subscribe(addSearchFn);
 
-		let completed = false;
-		dd.on('executionComplete', function () {
-			completed = true;
-		});
-		dd.on('beforeclose', function () {
-			if (!completed) {
+		const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
+		ga.addParam('sysparm_name', 'startSearch');
+		ga.addParam('term', config.term);
+		ga.addParam('context', JSON.stringify(config));
+		ga.getXMLAnswer(function (result) {
+			result = JSON.parse(result);
+			if (result?.status != 'success') {
+				errorHandler(result?.message || 'Unknown error on code search start');
+				return;
+			}
+			const dd = new GlideModal('hierarchical_progress_viewer', false, '40em', '10em');
+			dd.setTitle('Code Search for \'' + config.term + '\'');
+			dd.setPreference('sysparm_renderer_execution_id', result.execution.id);
+
+			let completed = false;
+			dd.on('executionComplete', function () {
+				completed = true;
+			});
+			dd.on('beforeclose', function () {
+				channel.unsubscribe(addSearchFn);
+				
+				if (completed) return;
+				if (!result.execution.owned) return;
+				if (searches.some(s => s.execution.id == result.execution.id)) return;
+
 				const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
 				ga.addParam('sysparm_name', 'cancelSearch');
-				ga.addParam('tracker', result.execution_id);
+				ga.addParam('tracker', result.execution.id);
 				ga.addParam('message', 'cancelled (window closed)');
 				ga.getXMLAnswer(function (result) {
 					if (!result?.status == 'success') {
-						g_form.addErrorMessage(result?.message || 'Unknown error during search cancellation');
+						errorHandler(result?.message || 'Unknown error during search cancellation');
 					}
 				});
-			}
+			});
+			dd.render();
 		});
-		dd.render();
-	});
+	}
 }]]></script>
         <show_insert>false</show_insert>
         <show_multiple_update>false</show_multiple_update>
@@ -79,7 +116,7 @@
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
         <sys_id>4027b57cc3a9fe90de14d8477d0131ac</sys_id>
-        <sys_mod_count>24</sys_mod_count>
+        <sys_mod_count>33</sys_mod_count>
         <sys_name>Start Search</sys_name>
         <sys_overrides/>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
@@ -87,7 +124,7 @@
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_ui_action_4027b57cc3a9fe90de14d8477d0131ac</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-01-01 09:31:19</sys_updated_on>
+        <sys_updated_on>2026-01-21 18:43:00</sys_updated_on>
         <table>x_itx_codesearch_st_metadata</table>
         <ui11_compatible>false</ui11_compatible>
         <ui16_compatible>false</ui16_compatible>

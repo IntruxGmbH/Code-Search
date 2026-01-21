@@ -3,7 +3,17 @@
         <category>general</category>
         <client_script><![CDATA[/* global window, GlideAjax, GlideModal */
 /* eslint no-undef: "error" */
+const searches = [];
 (function () {
+	// All started searches so they can be used to see if a search started by the current user
+	// was resused (because there is no need for two identical searches) by a different user.
+	// If this is the case, the current search must not be cancelled
+	(window.g_ambClient || window.top.g_ambClient)
+		.getChannel('/x_itx_codesearch/start')
+		.subscribe(function(message) {
+			searches.push(message.data);
+		});
+
 	const searchExtensions = window.document.getElementById('search-extensions');
 	const description = window.document.getElementById('searchgroup-description');
 	window.document.querySelector('select#searchgroup')
@@ -74,6 +84,9 @@ function getResults() {
 }
 
 function startSearch(term, context, errHandler) {
+	// we're only interested in searches started after our own search
+	searches.length = 0;
+
 	const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
 	ga.addParam('sysparm_name', 'startSearch');
 	ga.addParam('term', term);
@@ -84,31 +97,37 @@ function startSearch(term, context, errHandler) {
 			errHandler(result?.message || 'Unknown error on code search start');
 			return;
 		}
+		
 		const dd = new GlideModal('hierarchical_progress_viewer', false, '40em', '10em');
 		dd.setTitle('Code Search for \'' + term + '\'');
-		dd.setPreference('sysparm_renderer_execution_id', result.execution_id);
+		dd.setPreference('sysparm_renderer_execution_id', result.execution.id);
 
 		let completed = false;
+		const ambResult = {};
 		dd.on('executionComplete', function () {
 			completed = true;
 		});
 		dd.on('beforeclose', function () {
-			if (!completed) {
-				const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
-				ga.addParam('sysparm_name', 'cancelSearch');
-				ga.addParam('tracker', result.execution_id);
-				ga.addParam('message', 'cancelled (window closed)');
-				ga.getXMLAnswer(function (result) {
-					if (!result?.status == 'success') {
-						errHandler(result?.message || 'Unknown error during search cancellation');
-					}
-				});
-			}
+			if (completed) return;
+
+			// if we haven't started the code search never cancel it
+			if (!result.execution.owned) return;
+			// if we started it, but it was re-used by someone else also do not cancel it
+			if (searches.some(s => s.execution.id == result.execution.id)) return;
+
+			const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
+			ga.addParam('sysparm_name', 'cancelSearch');
+			ga.addParam('tracker', result.execution.id);
+			ga.addParam('message', 'cancelled (window closed)');
+			ga.getXMLAnswer(function (result) {
+				if (!result?.status == 'success') {
+					errHandler(result?.message || 'Unknown error during search cancellation');
+				}
+			});
 		});
 		dd.render();
 	});
-}
-]]></client_script>
+}]]></client_script>
         <description/>
         <direct>false</direct>
         <endpoint>x_itx_codesearch_search_async.do</endpoint>
@@ -275,13 +294,13 @@ function startSearch(term, context, errHandler) {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-12-14 11:48:12</sys_created_on>
         <sys_id>3a3099b1c3757e50de14d8477d013168</sys_id>
-        <sys_mod_count>93</sys_mod_count>
+        <sys_mod_count>99</sys_mod_count>
         <sys_name>search_async</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_ui_page_3a3099b1c3757e50de14d8477d013168</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-01-01 09:46:00</sys_updated_on>
+        <sys_updated_on>2026-01-21 17:16:38</sys_updated_on>
     </sys_ui_page>
 </record_update>

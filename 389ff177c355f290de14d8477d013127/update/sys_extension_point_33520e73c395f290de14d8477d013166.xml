@@ -2,7 +2,7 @@
     <sys_extension_point action="INSERT_OR_UPDATE">
         <api_name>x_itx_codesearch.CodeSearchExt</api_name>
         <description/>
-        <example><![CDATA[/* global Class, GlideTinyURL, GlideStringUtil, GlideCompressionUtil, SNC */
+        <example><![CDATA[/* global Class, GlideRecord, GlideTinyURL, GlideStringUtil, GlideCompressionUtil, SNC */
 /* eslint no-undef: "error" */
 var CodeSearchExt = Class.create();
 CodeSearchExt.prototype = {
@@ -39,6 +39,25 @@ CodeSearchExt.prototype = {
 		}
 	},
 
+	/**
+	 * Broadcast a AMB message
+	 * 
+	 * @param {string} channel
+	 * @param {object} data - must not an actual object and not a string
+	 * @param {string}
+	 */
+	broadcast: function (channel, data) {
+		var msgGr = new GlideRecord('sys_amb_message');
+		msgGr.newRecord();
+		msgGr.channel = channel;
+		msgGr.serialized_cometd_message = JSON.stringify({
+			data: data,
+			channel: channel
+		});
+
+		return msgGr.insert();
+	},
+
 	type: 'CodeSearchExt'
 };]]></example>
         <name>CodeSearchExt</name>
@@ -47,13 +66,13 @@ CodeSearchExt.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-25 21:47:11</sys_created_on>
         <sys_id>33520e73c395f290de14d8477d013166</sys_id>
-        <sys_mod_count>2</sys_mod_count>
+        <sys_mod_count>3</sys_mod_count>
         <sys_name>CodeSearchExt</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_extension_point_33520e73c395f290de14d8477d013166</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2025-12-20 18:27:23</sys_updated_on>
+        <sys_updated_on>2026-01-21 10:38:43</sys_updated_on>
     </sys_extension_point>
 </record_update>

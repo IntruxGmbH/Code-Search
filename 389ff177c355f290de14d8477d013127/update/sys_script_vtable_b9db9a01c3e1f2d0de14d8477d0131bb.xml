@@ -59,38 +59,48 @@
 	const api = new x_itx_codesearch.CodeSearchAPI();
 	if (v_query.isGet()) {
 		const sysId = v_query.getSysId();
-		if (GlideStringUtil.isEligibleSysID(sysId)) {
-			//
-			// Use Case: "Show Data" (UI Action)
-			// The SysID is a real sys_id pointing to an application file
-			//
-			const metadataGr = new GlideRecord('sys_metadata');
-			metadataGr.addQuery('sys_id', sysId);
-			metadataGr.setLimit(1);
-			metadataGr.query();
-			if (metadataGr.next()) {
-				const data = api.toJSON(metadataGr);
-				v_table.addRow({
-					sys_id: sysId,
-					record: sysId,
-					sys_scope: metadataGr.getValue('sys_scope'),
-					sys_class_name: metadataGr.getRecordClassName(),
-					data: JSON.stringify(data, null, 2),
-					actions: 'c838fd22c371f690de14d8477d013160'
-				});
-			}
-		} else {
-			//
-			// Use Case: "Code Search Dummy Record"
-			// The sys_id contains the search config which stores
-			// search term, search group and scope.
-			// The "Start Search" UI Action can be used to start the CodeSearchWorker
-			// which does the heavy lifting in the background
-			//
+		//
+		// Use Case: "Show Data" (UI Action)
+		// The SysID is a real sys_id pointing to an application file
+		//
+		const metadataGr = new GlideRecord('sys_metadata');
+		metadataGr.addQuery('sys_id', sysId);
+		metadataGr.setLimit(1);
+		metadataGr.query();
+		if (metadataGr.next()) {
+			const data = api.toJSON(metadataGr);
+			v_table.addRow({
+				sys_id: sysId,
+				record: sysId,
+				sys_scope: metadataGr.getValue('sys_scope'),
+				sys_class_name: metadataGr.getRecordClassName(),
+				data: JSON.stringify(data, null, 2),
+				actions: 'c838fd22c371f690de14d8477d013160'
+			});
+
+			return;
+		}
+		
+		//
+		// Use Case: "Code Search Dummy Record"
+		// The sys_id contains the search config which stores
+		// search term, search group and scope.
+		// The "Start Search" UI Action can be used to start the CodeSearchWorker
+		// which does the heavy lifting in the background
+		//
+		const data = sn_scoped_cache.ScopedCacheManager.get('codesearch_lookup', sysId);
+		if (data) {
 			v_table.addRow({
 				sys_id: sysId,
 				sys_class_name: 'x_itx_codesearch_st_metadata',
-				data: JSON.stringify(JSON.parse(sysId), null, 2),
+				data: data,
+				actions: 'c838fd22c371f690de14d8477d013160'
+			});
+		} else {
+			v_table.addRow({
+				sys_id: sysId,
+				sys_class_name: 'x_itx_codesearch_st_metadata',
+				data: 'SysID not found in the Search Config Cache.',
 				actions: 'c838fd22c371f690de14d8477d013160'
 			});
 		}
@@ -106,7 +116,6 @@
 		: '';
 	
 	if (!term) {
-		// 
 		gs.addInfoMessage('Use [Data][contains][term] to start a code search');
 		return;
 	}
@@ -207,8 +216,9 @@
 	
 	// ... otherwise provide the dummy record which provides a
 	// UI Action to start the a non-blocking background code search
-	v_table.addRow({
-		sys_id: JSON.stringify(searchConfig),
+	//sn_scoped_cache.ScopedCacheManager.flushScopedCache('codesearch_lookup');
+	const row = {
+		sys_id: gs.generateGUID(),
 		data: JSON.stringify({
 			_: `Use the 'Start Search' on this record or specify an Application for direct search`,
 			...searchConfig,
@@ -216,7 +226,9 @@
 		sys_class_name: 'x_itx_codesearch_st_metadata',
 		sys_scope: searchConfig.scope,
 		actions: '4027b57cc3a9fe90de14d8477d0131ac'
-	});
+	};
+	sn_scoped_cache.ScopedCacheManager.put('codesearch_lookup', row.sys_id, row.data);
+	v_table.addRow(row);
  
   })(v_table, v_query); /* global v_table, v_query */]]></script>
         <sys_class_name>sys_script_vtable</sys_class_name>
@@ -225,14 +237,14 @@
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
         <sys_id>b9db9a01c3e1f2d0de14d8477d0131bb</sys_id>
-        <sys_mod_count>39</sys_mod_count>
+        <sys_mod_count>47</sys_mod_count>
         <sys_name>ITX Code Search Metadata</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_vtable_b9db9a01c3e1f2d0de14d8477d0131bb</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-01-11 18:59:39</sys_updated_on>
+        <sys_updated_on>2026-01-21 18:42:31</sys_updated_on>
         <table>x_itx_codesearch_st_metadata</table>
         <update_script><![CDATA[(function executeUpdate(v_record, v_changed_fields) {
      // Parameters:

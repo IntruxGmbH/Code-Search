@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_amb_processor">
+    <sys_amb_processor action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <channel_create_advanced_authorization><![CDATA[function /*boolean*/ authorizeCreate(/*String*/ channel, /*String*/ user) {
+	return true;
+}]]></channel_create_advanced_authorization>
+        <channel_create_roles>admin</channel_create_roles>
+        <channel_name>/x_itx_codesearch/start</channel_name>
+        <channel_subscribe_advanced_authorization><![CDATA[function /*boolean*/ authorizeSubscribe(/*String*/ channel, /*String*/ user) {
+	return true;
+}]]></channel_subscribe_advanced_authorization>
+        <channel_subscribe_roles>admin</channel_subscribe_roles>
+        <class_name/>
+        <dedicated_session_sync>false</dedicated_session_sync>
+        <description/>
+        <lazy_message_delivery>false</lazy_message_delivery>
+        <lazy_timeout>5000</lazy_timeout>
+        <message_receive_advanced_authorization><![CDATA[function /*boolean*/ authorizeReceive(/*String*/ channel, /*UnmodifiableMap<String, Object>*/ message, /*String*/ sender, /*String*/ recipient) {
+	return true;
+}]]></message_receive_advanced_authorization>
+        <message_receive_listener><![CDATA[function /*void*/ onReceive(/*String*/ channel, /*UnmodifiableMap<String, Object>*/ message, /*String*/ sender, /*String*/ recipient) {
+
+}]]></message_receive_listener>
+        <message_receive_roles/>
+        <message_send_advanced_authorization><![CDATA[function /*boolean*/ authorizeSend(/*String*/ channel, /*Map<String, Object>*/ message, /*String*/ sender) {
+	return true;
+}]]></message_send_advanced_authorization>
+        <message_send_listener><![CDATA[function /*void*/ onSend(/*String*/ channel, /*Map<String, Object>*/ message, /*String*/ sender) {
+
+}]]></message_send_listener>
+        <message_send_roles>admin</message_send_roles>
+        <name>ITX Code Search</name>
+        <public>false</public>
+        <quick_message_delivery>true</quick_message_delivery>
+        <redeliver_missed_messages>false</redeliver_missed_messages>
+        <source_type>javascript</source_type>
+        <sys_class_name>sys_amb_processor</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2026-01-21 10:41:01</sys_created_on>
+        <sys_id>4801510ec36e3a50de14d8477d013191</sys_id>
+        <sys_mod_count>2</sys_mod_count>
+        <sys_name>ITX Code Search</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_amb_processor_4801510ec36e3a50de14d8477d013191</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2026-01-21 18:57:34</sys_updated_on>
+        <track_channel_presence>false</track_channel_presence>
+        <user_subscribe_listener><![CDATA[function /*void*/ onSubscribe(/*String*/ channel, /*String*/ user) {
+
+}]]></user_subscribe_listener>
+        <user_unsubscribe_listener><![CDATA[function /*void*/ onUnsubscribe(/*String*/ channel, /*String*/ user) {
+
+}]]></user_unsubscribe_listener>
+        <verify_message_sent_from_server>false</verify_message_sent_from_server>
+    </sys_amb_processor>
+</record_update>

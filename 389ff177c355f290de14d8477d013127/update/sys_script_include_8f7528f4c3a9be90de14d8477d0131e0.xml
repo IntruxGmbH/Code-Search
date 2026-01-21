@@ -16,17 +16,31 @@
         <sandbox_callable>false</sandbox_callable>
         <script><![CDATA[/* global global, gs, x_itx_codesearch */
 /* global Set */
-/* global Class, GlideRecord, GlideTableHierarchy, GlideScriptedHierarchicalWorker, GlideExecutionTracker */
+/* global Class, GlideRecord, GlideScriptedExtensionPoint, GlideTableHierarchy, GlideScriptedHierarchicalWorker, GlideExecutionTracker */
 /* eslint no-undef: "error" */
 var CodeSearchWorker = Class.create();
-CodeSearchWorker.getLastSearch = function (term, context) {
+CodeSearchWorker.EXEUCTION_TRACKER_STATES = {
+	PENDING: 0,
+	RUNNING: 1,
+	SUCCESSFULL: 2,
+	FAILED: 3,
+	CANCELLED: 4
+};
+CodeSearchWorker.getLastSearch = function (term, context, includeRunning = true) {
 	const STATE_SUCCESSFULL = 2;
 	const executionGr = new GlideRecord('sys_execution_tracker');
 	executionGr.addQuery('name', 'Intrux Code Search: ' + term);
-	executionGr.addQuery('state', STATE_SUCCESSFULL);
+	const cond = executionGr.addQuery('state', CodeSearchWorker.EXEUCTION_TRACKER_STATES.SUCCESSFULL);
+	if (includeRunning) {
+		cond.addOrCondition('state', CodeSearchWorker.EXEUCTION_TRACKER_STATES.RUNNING);
+	}
+
 	if (context.scope) {
 		executionGr.addQuery('source_table', 'sys_scope');
 		executionGr.addQuery('source', context.scope);
+	} else {
+		executionGr.addNullQuery('source_table');
+		executionGr.addNullQuery('source');
 	}
 
 	executionGr.orderByDesc('sys_updated_on');
@@ -36,34 +50,64 @@ CodeSearchWorker.getLastSearch = function (term, context) {
 	return executionGr;
 };
 CodeSearchWorker.start = function (term, context) {
-	if (context.table) {
-		// if the table hasn't changed since the most recent search
-		// the worker can be used instead
-		const lastSearchGr = CodeSearchWorker.getLastSearch(term, context);
-		if (lastSearchGr.isValidRecord()) {
-			const api = new x_itx_codesearch.CodeSearchAPI();
-			if (!api.updatedSince(context.table, lastSearchGr.sys_created_on, context)) {
-				return lastSearchGr.getUniqueValue();
+
+	const execution = _start(term, context);
+
+	// notify about other clients about what is currently search
+	// so if that clients do not cancel their searches prematurely
+	const ext = new GlideScriptedExtensionPoint().getExtensions('CodeSearchExt')[0];
+	ext.initialize();
+	ext.broadcast('/x_itx_codesearch/start', {
+		term,
+		context,
+		execution
+	});
+
+	return execution;
+
+	function _start(term, context) {
+		if (context.table) {
+			// if the table hasn't changed since the most recent search
+			// the worker can be used instead
+			const lastSearchGr = CodeSearchWorker.getLastSearch(term, context);
+			if (lastSearchGr.isValidRecord()) {
+				if (lastSearchGr.state == CodeSearchWorker.EXEUCTION_TRACKER_STATES.RUNNING) {
+					return {
+						owned: false,
+						id: lastSearchGr.getUniqueValue()
+					};
+				}
+				
+				const api = new x_itx_codesearch.CodeSearchAPI();
+				if (!api.updatedSince(context.table, lastSearchGr.sys_created_on, context)) {
+					return {
+						owned: false,
+						id: lastSearchGr.getUniqueValue()
+					};
+				}
 			}
 		}
+
+		const worker = new GlideScriptedHierarchicalWorker();
+		worker.setProgressName('Intrux Code Search: ' + term);
+		worker.setScriptIncludeName('x_itx_codesearch.CodeSearchWorker');
+		worker.setScriptIncludeMethod('search');
+		worker.putMethodArg('term', term);
+		worker.putMethodArg('context', context);
+		worker.setBackground(true);
+
+		if (context?.scope) {
+			worker.setSourceTable('sys_scope');
+			worker.setSource(context.scope);
+		}
+
+		worker.start();
+
+		return {
+			owned: true,
+			id: worker.getProgressID()
+		};
 	}
-
-	const worker = new GlideScriptedHierarchicalWorker();
-	worker.setProgressName('Intrux Code Search: ' + term);
-	worker.setScriptIncludeName('x_itx_codesearch.CodeSearchWorker');
-	worker.setScriptIncludeMethod('search');
-	worker.putMethodArg('term', term);
-	worker.putMethodArg('context', context);
-	worker.setBackground(true);
-
-	if (context?.scope) {
-		worker.setSourceTable('sys_scope');
-		worker.setSource(context.scope);
-	}
-
-	worker.start();
-
-	return worker.getProgressID();
 };
 CodeSearchWorker.prototype = {
 	initialize: function (trackerId) {
@@ -103,7 +147,7 @@ CodeSearchWorker.prototype = {
 		let numAllHits = 0;
 
 		const lastSearchGr = (() => {
-			const lastSearchGr = CodeSearchWorker.getLastSearch(term, context);
+			const lastSearchGr = CodeSearchWorker.getLastSearch(term, context, false);
 			if (lastSearchGr.isValidRecord()) return lastSearchGr;
 		})();
 
@@ -121,6 +165,12 @@ CodeSearchWorker.prototype = {
 			const { result, message } = (() => {
 				if (lastSearchGr) {
 					if (!this.api.updatedSince(table, lastSearchGr.sys_created_on, context)) {
+						// if the table hasn't changed since the last search:
+						// - if a child-execution tracker exists for the table:
+						//   there are search hits, and the tracker contains the result
+						//
+						// - if no child execution tracker exists:
+						//   no search hits
 						const executionGr = new GlideRecord('sys_execution_tracker');
 						executionGr.addQuery('parent', lastSearchGr.sys_id);
 						executionGr.addQuery('name', 'Table: ' + table);
@@ -211,17 +261,9 @@ CodeSearchWorker.prototype = {
 	},
 	
 	_isCancelled: function () {
-		const state = {
-			PENDING: 0,
-			RUNNING: 1,
-			SUCCESSFULL: 2,
-			FAILED: 3,
-			CANCELLED: 4
-		};
-		
 		const trackerGr = new GlideRecord('sys_execution_tracker');
 		trackerGr.addQuery('sys_id', this.worker_id);
-		trackerGr.addQuery('state', state.CANCELLED);
+		trackerGr.addQuery('state', CodeSearchWorker.EXEUCTION_TRACKER_STATES.CANCELLED);
 		trackerGr.setLimit(1);
 		trackerGr.query();
 		return trackerGr.hasNext();
@@ -294,13 +336,13 @@ CodeSearchWorker.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-28 17:55:52</sys_created_on>
         <sys_id>8f7528f4c3a9be90de14d8477d0131e0</sys_id>
-        <sys_mod_count>97</sys_mod_count>
+        <sys_mod_count>107</sys_mod_count>
         <sys_name>CodeSearchWorker</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_8f7528f4c3a9be90de14d8477d0131e0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-01-01 09:27:53</sys_updated_on>
+        <sys_updated_on>2026-01-21 14:42:05</sys_updated_on>
     </sys_script_include>
 </record_update>
