@@ -22,9 +22,6 @@
         <type>string</type>
         <value>sys_metadata_delete</value>
         <write_roles/>
-        <x_intr_prop_list/>
-        <x_intr_prop_reference/>
-        <x_intr_prop_table/>
     </sys_properties>
     <sys_translated_text action="delete_multiple" query="documentkey=7024c250c3a97a90de14d8477d0131a0"/>
 </record_update>

@@ -49,7 +49,6 @@
         <chunk_size_bytes>700000</chunk_size_bytes>
         <compressed>true</compressed>
         <content_type>image/png</content_type>
-        <encryption_context/>
         <file_name>logo</file_name>
         <hash>1eddf517beb0f6a4489e59f28cede495e4a7cf794998f36236bb347f7a7f749c</hash>
         <image_height>64</image_height>
@@ -89,7 +88,6 @@
         <chunk_size_bytes>700000</chunk_size_bytes>
         <compressed>true</compressed>
         <content_type>application/javascript</content_type>
-        <encryption_context/>
         <file_name>mermaid.tiny11.js</file_name>
         <hash>0cb6802f89122b436e4d251ed2569bbed9f724c0df6bb8a14d5f7925c2b8bbac</hash>
         <image_height/>

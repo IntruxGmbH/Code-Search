@@ -22,9 +22,6 @@
         <type>choicelist</type>
         <value>info</value>
         <write_roles/>
-        <x_intr_prop_list/>
-        <x_intr_prop_reference/>
-        <x_intr_prop_table/>
     </sys_properties>
     <sys_translated_text action="delete_multiple" query="documentkey=fc92c6b3c395f290de14d8477d013109"/>
 </record_update>

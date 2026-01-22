@@ -22,9 +22,6 @@
         <type>boolean</type>
         <value>true</value>
         <write_roles/>
-        <x_intr_prop_list/>
-        <x_intr_prop_reference/>
-        <x_intr_prop_table/>
     </sys_properties>
     <sys_translated_text action="delete_multiple" query="documentkey=e28fbd48c3e5b690de14d8477d0131e6"/>
 </record_update>

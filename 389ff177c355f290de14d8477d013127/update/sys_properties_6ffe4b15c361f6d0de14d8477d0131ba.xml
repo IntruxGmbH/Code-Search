@@ -22,9 +22,6 @@
         <type>integer</type>
         <value>500</value>
         <write_roles/>
-        <x_intr_prop_list/>
-        <x_intr_prop_reference/>
-        <x_intr_prop_table/>
     </sys_properties>
     <sys_translated_text action="delete_multiple" query="documentkey=6ffe4b15c361f6d0de14d8477d0131ba"/>
 </record_update>
