@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_script">
+    <sys_ui_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <description/>
+        <global>false</global>
+        <ignore_in_now_experience>false</ignore_in_now_experience>
+        <name>x_itx_codesearch.code_search</name>
+        <script><![CDATA[var x_itx_codesearch = x_itx_codesearch || {};
+x_itx_codesearch.code_search = (function () {
+	"use strict";
+
+	/* global Promise */
+	/* global amb, GlideAjax, GlideModal */
+	/* eslint no-undef: "error" */
+
+	const channel = (typeof amb !== 'undefined' ? amb?.getClient() : null)?.getChannel('/x_itx_codesearch/start');
+	channel?.subscribe(function (message) {
+		const executionId = message.data.execution.id;
+		const search = searches[executionId];
+		if (search) {
+			search.listeners++;
+			search.cancelButton.prop('disabled', true);
+		}
+	});
+
+	function startSearch(term, config) {
+		return new Promise((resolve, reject) => {
+			const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
+			ga.addParam('sysparm_name', 'startSearch');
+			ga.addParam('term', term);
+			ga.addParam('context', JSON.stringify(config));
+			ga.addParam('shared', !!channel);
+			ga.getXMLAnswer(function (result) {
+				try {
+					result = JSON.parse(result);
+					if (result?.status == 'success') {
+						resolve(result.execution);
+					} else {
+						reject(result?.message || 'Unknown error on code search start');
+					}
+				} catch (e) {
+					reject(e);
+				}
+			});
+		});
+	}
+
+	function cancelSearch(executionId, reason) {
+		return new Promise((resolve, reject) => {
+			const ga = new GlideAjax('x_itx_codesearch.CodeSearchUtilClient');
+			ga.addParam('sysparm_name', 'cancelSearch');
+			ga.addParam('tracker', executionId);
+			ga.addParam('message', reason);
+			ga.getXMLAnswer(function (result) {
+				try {
+					result = JSON.parse(result);
+					if (result?.status == 'success') {
+						resolve();
+					} else {
+						reject(result?.message || 'Unknown error during search cancellation');
+					}
+				} catch (e) {
+					reject(e);
+				}
+			});
+		});
+	}
+
+	const searches = {};
+	return {
+		start: function (term, config) {
+			return new Promise(async (resolve, reject) => {
+				const execution = await startSearch(term, config);
+				const search = searches[execution.id] = {
+					...execution,
+					listeners: 0
+				};
+
+				const dd = new GlideModal('hierarchical_progress_viewer', false, '40em', '10em');
+				dd.setTitle('Code Search for \'' + term + '\'');
+				dd.setPreference('sysparm_renderer_execution_id', execution.id);
+
+				let cancelling = false;
+				let completed = false;
+				dd.on('executionComplete', function () {
+					completed = true;
+					delete searches[execution.id];
+				});
+				dd.on('bodyrendered', function (response) {
+					const buttonsPanel = dd.$window.find('#buttonsPanel');
+					if (buttonsPanel) {
+						// add the button to the search so that it can be disabled once it is shared
+						search.cancelButton = buttonsPanel.append('<button type="button" class="btn btn-default" style="margin-left: 5px; float: right;">Cancel</button>');
+						if (execution.owned) {
+							search.cancelButton.on('click', function () {
+								cancelling = true;
+								search.cancelButton.prop('disabled', true);
+								cancelSearch(execution.id, 'cancelled').catch(reject);
+							});
+						} else {
+							// only owned searches can be cancelled
+							search.cancelButton.prop('disabled', true);
+						}
+					}
+				});
+				dd.on('beforeclose', function () {
+					if (completed || cancelling) return;
+					if (!execution.owned) return;
+					if (search?.listeners > 0) {
+						// execution musn't be cancelled because it's shared
+						return;
+					}
+
+					cancelSearch(execution.id, 'window closed').catch(reject);
+				});
+				dd.render();
+			});
+		},
+		type: 'code_search'
+	};
+})();]]></script>
+        <script_name>code_search</script_name>
+        <sys_class_name>sys_ui_script</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2026-01-23 15:24:37</sys_created_on>
+        <sys_id>d116a76683aa36104967cbb6feaad37e</sys_id>
+        <sys_mod_count>3</sys_mod_count>
+        <sys_name>x_itx_codesearch.code_search</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_ui_script_d116a76683aa36104967cbb6feaad37e</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2026-01-23 17:45:06</sys_updated_on>
+        <ui_type>0</ui_type>
+        <use_scoped_format>true</use_scoped_format>
+    </sys_ui_script>
+</record_update>

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_script_vtable">
+    <sys_script_vtable action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <advanced>false</advanced>
+        <cache_isolation_level>USER</cache_isolation_level>
+        <cache_strategy>CACHE_BY_QUERY</cache_strategy>
+        <cache_ttl>0</cache_ttl>
+        <delete_script><![CDATA[(function executeDelete(v_record) {
+     // Parameters:
+     //      v_record - a map of field names and values containing (among others) the
+     //              sys_id of the record that needs to be deleted on the remote system
+     //          v_record.<field_name>                  - fields in the remote table GlideRecord
+     //          v_record.setLastErrorMessage(message)   - signal an error
+ 
+     // Sample code:
+     //  try {
+     //      update-external-system;
+     //      if (there-was-an-error) {
+     //          var message = ...;
+     //          v_record.setLastErrorMessage(message);
+     //      }
+     //  } catch (ex) {
+     //      var message = ex.getMessage();
+     //      v_record.setLastErrorMessage(message);
+     //  }
+  })(v_record);]]></delete_script>
+        <editable>false</editable>
+        <enhanced_capacity>false</enhanced_capacity>
+        <flow/>
+        <insert_script><![CDATA[(function executeInsert(v_record) {
+     // Parameters:
+     //      v_record is a map of field names and values containing the sys_id of the
+     //              record and the fields that need to be inserted in the record on the
+     //              remote system (source of data)
+     
+     //          v_record.<field_name>                   - fields in the remote table GlideRecord
+     //          v_record.setLastErrorMessage(message)   - signal an error
+ 
+     // Sample code:
+     //  try {
+     //      update-external-system;
+     //      if (there-was-an-error) {
+     //          var message = ...;
+     //          v_record.setLastErrorMessage(message);
+     //      }
+     //  } catch (ex) {
+     //      var message = ex.getMessage();
+     //      v_record.setLastErrorMessage(message);
+     //  }
+  })(v_record);]]></insert_script>
+        <name>ITX Code Search - Search History</name>
+        <script><![CDATA[(function executeQuery(v_table, v_query) {
+	/* global GlideRecord, GlideDateTime, GlideDuration */
+	/* eslint no-undef: "error" */
+
+	const STATE = {
+		CANCELLED: 4
+	};
+
+	const executionGr = new GlideRecord('sys_execution_tracker');
+	executionGr.addQuery('name', 'STARTSWITH', 'Intrux Code Search: ');
+	executionGr.addNullQuery('parent');
+	executionGr.addQuery('state', '!=', STATE.CANCELLED);
+	if (v_query.isGet()) {
+		executionGr.addQuery('sys_id', v_query.getSysId());
+		executionGr.setLimit(1);
+	} else {
+		executionGr.setLimit(100);
+	}
+
+	executionGr.orderByDesc('sys_created_on');
+	executionGr.query();
+	while (executionGr.next()) {
+		const completionTime = executionGr.completion_time ? new GlideDateTime(executionGr.completion_time) : new GlideDateTime();
+		const duration = completionTime.getNumericValue() - new GlideDateTime(executionGr.start_time).getNumericValue();
+		v_table.addRow({
+			sys_id: executionGr.getUniqueValue(),
+			term: executionGr.name.toString().substring('Intrux Code Search: '.length),
+			scope: executionGr.source_table == 'sys_scope' ? executionGr.source : '',
+			duration: new GlideDuration(duration),
+			sys_created_on: executionGr.sys_created_on,
+			sys_created_by: executeQuery.sys_created_by,
+			actions: '1846f3c2837e36504967cbb6feaad399'
+		});
+	}
+
+})(v_table, v_query); /* global v_table, v_query */]]></script>
+        <sys_class_name>sys_script_vtable</sys_class_name>
+        <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
+        <sys_created_on>2026-02-03 08:59:35</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>f316bf82837e36504967cbb6feaad3e0</sys_id>
+        <sys_mod_count>5</sys_mod_count>
+        <sys_name>ITX Code Search - Search History</sys_name>
+        <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
+        <sys_update_name>sys_script_vtable_f316bf82837e36504967cbb6feaad3e0</sys_update_name>
+        <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
+        <sys_updated_on>2026-02-03 09:15:09</sys_updated_on>
+        <table>x_itx_codesearch_st_search_history</table>
+        <update_script><![CDATA[(function executeUpdate(v_record, v_changed_fields) {
+     // Parameters:
+     //    v_record - a map of field names and values containing the sys_id of the record
+     //          v_record.<field_name>                   - fields in the remote table GlideRecord
+     //          v_record.setLastErrorMessage(message)   - signal an error
+     //    v_changed_fields - a map of field names and values containing the sys_id of the
+     //          v_changed_fields.<field_name>           - changed fields in the remote table GlideRecord
+ 
+     // Sample code:
+     //  try {
+     //      update-external-system;
+     //      if (there-was-an-error) {
+     //          var message = ...;
+     //          v_record.setLastErrorMessage(message);
+     //      }
+     //  } catch (ex) {
+     //      var message = ex.getMessage();
+     //      v_record.setLastErrorMessage(message);
+     //  }
+  })(v_record, v_changed_fields);]]></update_script>
+    </sys_script_vtable>
+</record_update>

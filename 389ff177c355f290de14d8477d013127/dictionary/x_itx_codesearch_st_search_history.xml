@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="11a47bce833e36504967cbb6feaad37e" label="Search History" max_length="40" name="x_itx_codesearch_st_search_history" type="collection">
+        <element label="Actions" max_length="4000" name="actions" type="glide_action_list"/>
+        <element label="Scope" max_length="32" name="scope" reference="sys_scope" type="reference"/>
+        <element label="Term" max_length="100" name="term" type="string"/>
+        <element label="Duration" max_length="40" name="duration" type="glide_duration"/>
+        <index name="index">
+            <element name="scope"/>
+        </index>
+    </element>
+</database>

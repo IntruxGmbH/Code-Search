@@ -8,11 +8,11 @@
 }]]></client_script_v2>
         <comments/>
         <condition>current.canRead()</condition>
-        <form_action>true</form_action>
+        <form_action>false</form_action>
         <form_button>false</form_button>
         <form_button_v2>false</form_button_v2>
         <form_context_menu>false</form_context_menu>
-        <form_link>true</form_link>
+        <form_link>false</form_link>
         <form_menu_button_v2>false</form_menu_button_v2>
         <form_style/>
         <format_for_configurable_workspace>false</format_for_configurable_workspace>
@@ -27,63 +27,44 @@
         <list_save_with_form_button>false</list_save_with_form_button>
         <list_style/>
         <messages/>
-        <name>Start Search</name>
-        <onclick>startCodeSearch()</onclick>
+        <name>Open</name>
+        <onclick>openExecution()</onclick>
         <order>100</order>
-        <script><![CDATA[function startCodeSearch() {
-	/* global x_itx_codesearch */
-	/* global Promise, fetch */
-	/* global g_ck, g_sysId, g_form */
-	/* global GlideUI, ScriptLoader */
-	/* eslint no-undef: "error" */
-	const { config, errorHandler } = (() => {
-		if (typeof g_list !== 'undefined') {
-			return {
-				config: fetch('/api/now/table/x_itx_codesearch_st_metadata/' + g_sysId + '?sysparm_fields=data', {
-						headers: {
-							'X-UserToken': g_ck
-						}
-					})
-					.then(resp => resp.json())
-					.then(json => JSON.parse(json.result.data)), 
-				errorHandler: function (msg) {
-					GlideUI.get().addOutputMessage({ type: 'error', msg: msg });
-				}
-			};
-		}
-		
-		return {
-			config: JSON.parse(g_form.getValue('data')),
-			errorHandler: g_form.addErrorMessage
-		};
-	})();
+        <script><![CDATA[function openExecution() {
+	const dd = new GlideModal('hierarchical_progress_viewer', false, '40em', '10em');
 
-	const scriptLoader = new Promise(resolve => ScriptLoader.getScripts('x_itx_codesearch.code_search.jsdbx', resolve));
-	
-	Promise.all([config, scriptLoader])
-		.then(([config]) => x_itx_codesearch.code_search.start(config.term, config))
-		.catch(errorHandler);
+	const node = g_list.getCell(g_sysId, 'term');
+	const term = node && node.textContent;
+	if (term) {
+		dd.setTitle('Code Search for \'' + term + '\'');
+	} else {
+		// term column not present on the list
+		dd.setTitle('Code Search');
+	}
+
+	dd.setPreference('sysparm_renderer_execution_id', g_sysId);
+	dd.render();
 }]]></script>
         <show_insert>false</show_insert>
         <show_multiple_update>false</show_multiple_update>
         <show_query>false</show_query>
-        <show_update>true</show_update>
+        <show_update>false</show_update>
         <sys_class_name>sys_ui_action</sys_class_name>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
-        <sys_created_on>2025-11-28 23:18:34</sys_created_on>
+        <sys_created_on>2026-02-03 08:58:56</sys_created_on>
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
-        <sys_id>4027b57cc3a9fe90de14d8477d0131ac</sys_id>
-        <sys_mod_count>34</sys_mod_count>
-        <sys_name>Start Search</sys_name>
+        <sys_id>1846f3c2837e36504967cbb6feaad399</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>Open</sys_name>
         <sys_overrides/>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
-        <sys_update_name>sys_ui_action_4027b57cc3a9fe90de14d8477d0131ac</sys_update_name>
+        <sys_update_name>sys_ui_action_1846f3c2837e36504967cbb6feaad399</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-01-23 17:02:05</sys_updated_on>
-        <table>x_itx_codesearch_st_metadata</table>
+        <sys_updated_on>2026-02-03 09:04:19</sys_updated_on>
+        <table>x_itx_codesearch_st_search_history</table>
         <ui11_compatible>false</ui11_compatible>
         <ui16_compatible>false</ui16_compatible>
     </sys_ui_action>
