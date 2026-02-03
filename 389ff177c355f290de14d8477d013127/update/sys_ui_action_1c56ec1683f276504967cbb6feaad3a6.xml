@@ -8,53 +8,55 @@
 }]]></client_script_v2>
         <comments/>
         <condition>current.canRead()</condition>
-        <form_action>true</form_action>
+        <form_action>false</form_action>
         <form_button>false</form_button>
         <form_button_v2>false</form_button_v2>
         <form_context_menu>false</form_context_menu>
-        <form_link>true</form_link>
+        <form_link>false</form_link>
         <form_menu_button_v2>false</form_menu_button_v2>
         <form_style/>
         <format_for_configurable_workspace>false</format_for_configurable_workspace>
-        <hint/>
+        <hint>Clearing the search history might help if the search results are no longer accurate because records were modified using setWorkfow(false)</hint>
         <isolate_script>true</isolate_script>
-        <list_action>false</list_action>
+        <list_action>true</list_action>
         <list_banner_button>false</list_banner_button>
         <list_button>false</list_button>
         <list_choice>false</list_choice>
         <list_context_menu>false</list_context_menu>
-        <list_link>false</list_link>
+        <list_link>true</list_link>
         <list_save_with_form_button>false</list_save_with_form_button>
         <list_style/>
         <messages/>
-        <name>Open</name>
-        <onclick>openExecution()</onclick>
+        <name>Clear History</name>
+        <onclick>deleteSearchHistory()</onclick>
         <order>100</order>
-        <script><![CDATA[function openExecution() {
-	/* global GlideModal, g_list, g_sysId, g_form */
-	/* eslint no-undef: "error" */
-	const dd = new GlideModal('hierarchical_progress_viewer', false, '40em', '10em');
+        <script><![CDATA[/* eslint no-undef: "error" */
 
-	let executionId = '';
-	let term = '';
-	if (typeof g_sysId !== 'undefined') {
-		const node = g_list.getCell(g_sysId, 'term');
-		term = node && node.textContent;
-		executionId = g_sysId;
-	} else {
-		term = g_form.getValue('term');
-		executionId = g_form.getUniqueValue();
+function deleteSearchHistory() {
+	/* global GlideModal, g_list */
+	const target = g_list.getChecked() ? 'selected' : 'whole';
+
+	const gm = new GlideModal('glide_confirm_standard'); 
+	gm.setTitle('Search History Clear Confirmation');
+	gm.setPreference('title', 'Do you really want to clear the ' + target + ' search history?');
+	gm.setPreference('warning', true);
+	gm.setPreference('onPromptComplete', function () {
+		// Note: The adding 'sysverb' to skip the 'record selection' check.
+		g_list.action('1c56ec1683f276504967cbb6feaad3a6', 'sysverb');
+	});
+	gm.render();
+}
+
+if (typeof window === 'undefined') {
+	/* global gs */
+	/* global action, x_itx_codesearch */
+	const checked = action.getGlideURI().get('sysparm_checked_items');
+	const result = x_itx_codesearch.CodeSearchWorker.clear(checked);
+	if (result.status != 'success') {
+		gs.addErrorMessage(result.message);
 	}
 
-	if (term) {
-		dd.setTitle('Code Search for \'' + term + '\'');
-	} else {
-		// term column not present on the list
-		dd.setTitle('Code Search');
-	}
-
-	dd.setPreference('sysparm_renderer_execution_id', executionId);
-	dd.render();
+	action.setRedirectURL('x_itx_codesearch_st_search_history_list.do');
 }]]></script>
         <show_insert>false</show_insert>
         <show_multiple_update>false</show_multiple_update>
@@ -62,19 +64,19 @@
         <show_update>true</show_update>
         <sys_class_name>sys_ui_action</sys_class_name>
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
-        <sys_created_on>2026-02-03 08:58:56</sys_created_on>
+        <sys_created_on>2026-02-03 12:44:01</sys_created_on>
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
-        <sys_id>1846f3c2837e36504967cbb6feaad399</sys_id>
-        <sys_mod_count>2</sys_mod_count>
-        <sys_name>Open</sys_name>
+        <sys_id>1c56ec1683f276504967cbb6feaad3a6</sys_id>
+        <sys_mod_count>15</sys_mod_count>
+        <sys_name>Clear History</sys_name>
         <sys_overrides/>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
-        <sys_update_name>sys_ui_action_1846f3c2837e36504967cbb6feaad399</sys_update_name>
+        <sys_update_name>sys_ui_action_1c56ec1683f276504967cbb6feaad3a6</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-02-03 12:38:23</sys_updated_on>
+        <sys_updated_on>2026-02-03 13:33:01</sys_updated_on>
         <table>x_itx_codesearch_st_search_history</table>
         <ui11_compatible>false</ui11_compatible>
         <ui16_compatible>false</ui16_compatible>

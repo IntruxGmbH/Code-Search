@@ -56,35 +56,74 @@ Utilities.prototype = {
 	transformRemoteTableQuery: function (target, query) {
 		const targetMatches = target + '=';
 		const targetDotWalk = target + '.';
-		return this.transformQuery(query, 
-		/*return query.split(/(?<!\^)\^EQ/).map(eq => {
-			return eq.split(/(?<!\^)\^NQ/).map(nq => {
-				return nq.split(/(?<!\^)\^OR/).map(or => {
-					return or.split(/(?<!\^)\^/).map(*/and => {
-						if (and.startsWith(targetMatches)) return and.replace(targetMatches, 'sys_id=');
-						else if (and.startsWith(targetDotWalk)) return and.replace(targetDotWalk, '');
-						else if (and.startsWith('sys_id')) return and;
-						else if (and.startsWith('sys_scope')) return and;
-
-						// ignore all other (only data?) conditions parts
-						// currently (due to caching), there is no need
-						// to implement this
-					})/*.filter(q => !!q).join('^');
-				}).filter(q => !!q).join('^OR');
-			}).filter(q => !!q).join('^NQ');
-		}).filter(q => !!q).join('^EQ')*/;
+		return this.transformQuery(query, and => {
+			if (and.startsWith(targetMatches)) return and.replace(targetMatches, 'sys_id=');
+			else if (and.startsWith(targetDotWalk)) return and.replace(targetDotWalk, '');
+			else if (and.startsWith('sys_id')) return and;
+			else if (and.startsWith('sys_scope')) return and;
+			// conditions not targeting sys_id or sys_scope of the remote tabel
+			// or the target (e.g. flow, flow_action, ...) itself
+			// are ignored (ServiceNow will apply those filters automatically on the 
+			// cached results)
+		});
 	},
 
 	transformQuery: function (query, transformer) {
+		return splitToken(query, 'EQ').map(eq => {
+			return splitToken(eq, 'NQ').map(nq => {
+				return splitToken(nq, 'OR').map(or => {
+					return splitCaret(or).map(and => {
+						return transformer(and);
+					}).filter(Boolean).join('^');
+				}).filter(Boolean).join('^OR');
+			}).filter(Boolean).join('^NQ');
+		}).filter(Boolean).join('^EQ');
+		
+		function splitToken(s, token) {
+			const out = [];
+			let start = 0;
+			const needle = '^' + token;
+			let i = 0;
+
+			while (i <= s.length - needle.length) {
+				if (s.substr(i, needle.length) === needle && s[i - 1] !== '^') {
+					out.push(s.slice(start, i));
+					i += needle.length;
+					start = i;
+				} else {
+					i++;
+				}
+			}
+
+			out.push(s.slice(start));
+			return out;
+		}
+
+		function splitCaret(s) {
+			const out = [];
+			let start = 0;
+
+			for (let i = 0; i < s.length; i++) {
+				if (s[i] === '^' && s[i - 1] !== '^') {
+					out.push(s.slice(start, i));
+					start = i + 1;
+				}
+			}
+
+			out.push(s.slice(start));
+			return out;
+		}
+
+		// negative lookbehind (available only in >= Zurich)
 		return query.split(/(?<!\^)\^EQ/).map(eq => {
 			return eq.split(/(?<!\^)\^NQ/).map(nq => {
 				return nq.split(/(?<!\^)\^OR/).map(or => {
 					return or.split(/(?<!\^)\^/).map(and => {
 						return transformer(and);
-					}).filter(q => !!q).join('^');
-				}).filter(q => !!q).join('^OR');
-			}).filter(q => !!q).join('^NQ');
-		}).filter(q => !!q).join('^EQ');
+					}).filter(Boolean).join('^');
+				}).filter(Boolean).join('^OR');
+			}).filter(Boolean).join('^NQ');
+		}).filter(Boolean).join('^EQ');
 	},
 
 	/**
@@ -285,13 +324,13 @@ Utilities.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 18:32:17</sys_created_on>
         <sys_id>64f1e54dc3e5b2d0de14d8477d0131d0</sys_id>
-        <sys_mod_count>44</sys_mod_count>
+        <sys_mod_count>54</sys_mod_count>
         <sys_name>Utilities</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_64f1e54dc3e5b2d0de14d8477d0131d0</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-01-15 15:51:08</sys_updated_on>
+        <sys_updated_on>2026-02-03 12:02:34</sys_updated_on>
     </sys_script_include>
 </record_update>

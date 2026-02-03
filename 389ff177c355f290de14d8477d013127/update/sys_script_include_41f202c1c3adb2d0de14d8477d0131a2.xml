@@ -70,6 +70,9 @@ CodeSearchHandlerFlow.prototype = {
 	/**
 	 * get the SysIDs of records that match the record
 	 * 
+	 * Note: MUST NO BE CALLED BY THE 'Flow'-Remote Table
+	 * (cyclic dependency)!
+	 * 
 	 * @param {string} table
 	 * @param {string} term
 	 * @param {object} [options]
@@ -78,6 +81,14 @@ CodeSearchHandlerFlow.prototype = {
 	 * @returns {string[]}
 	 */
 	search: function (table, term, options) {
+		// The flows content is stored as a embedded attachment (base64 gzip),
+		// so the cached records of the flow remote table are searched intead.
+		// This makes use of all caching capabilities of the ServiceNow platform,
+		// only leaving one possible optimization:
+		// Using a m2m table to store and update the JSON each time the flow is updated
+		// - this would not be of much improvement though as the current solution searched 1k
+		// flows in around 10 seconds and most searches are done using the background search
+		// anyways, where those 10 seconds don't matter.
 		const flowGr = new GlideRecord('x_itx_codesearch_st_flow');
 		flowGr.addQuery('data', 'CONTAINS', term);
 		if (options?.scope) {
@@ -290,13 +301,13 @@ CodeSearchHandlerFlow.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 18:41:24</sys_created_on>
         <sys_id>41f202c1c3adb2d0de14d8477d0131a2</sys_id>
-        <sys_mod_count>15</sys_mod_count>
+        <sys_mod_count>16</sys_mod_count>
         <sys_name>CodeSearchHandlerFlow</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_41f202c1c3adb2d0de14d8477d0131a2</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-01-21 14:49:31</sys_updated_on>
+        <sys_updated_on>2026-02-03 12:12:04</sys_updated_on>
     </sys_script_include>
 </record_update>
