@@ -19,7 +19,7 @@ CodeSearchHandlerFlow.prototype = {
 		this.use_cache = gs.getProperty('x_itx_codesearch.use_cache') == 'true';
 		if (this.use_cache) {
 			// automatic cache clear when script is updated and the data structure changed
-			this.cache_version = '1';
+			this.cache_version = '2';
 			this._checkCache('flow_json_data');
 		}
 	},
@@ -273,6 +273,17 @@ CodeSearchHandlerFlow.prototype = {
 			}
 
 			action.fields = this.util.toJSON(actionGr);
+			const inputScriptGr = new GlideRecord('sys_hub_input_scripts');
+			inputScriptGr.addQuery('referenced_table', klass);
+			inputScriptGr.addQuery('instance', actionGr.sys_id);
+			inputScriptGr.query();
+			while (inputScriptGr.next()) {
+				// TODO: we should be probably searching for the field in action.fields.action_inputs (which is an array!)
+				const field = action.fields[inputScriptGr.input_name.toString()] ??= {};
+				field.scriptActive = !!inputScriptGr.active;
+				field.script = inputScriptGr.script.toString();
+			}
+			
 			actions.push(action);
 		}
 
@@ -301,13 +312,13 @@ CodeSearchHandlerFlow.prototype = {
         <sys_created_by>markus.kraus@intrux.ch</sys_created_by>
         <sys_created_on>2025-11-29 18:41:24</sys_created_on>
         <sys_id>41f202c1c3adb2d0de14d8477d0131a2</sys_id>
-        <sys_mod_count>16</sys_mod_count>
+        <sys_mod_count>20</sys_mod_count>
         <sys_name>CodeSearchHandlerFlow</sys_name>
         <sys_package display_value="Intrux Code Search" source="x_itx_codesearch">389ff177c355f290de14d8477d013127</sys_package>
         <sys_policy/>
         <sys_scope display_value="Intrux Code Search">389ff177c355f290de14d8477d013127</sys_scope>
         <sys_update_name>sys_script_include_41f202c1c3adb2d0de14d8477d0131a2</sys_update_name>
         <sys_updated_by>markus.kraus@intrux.ch</sys_updated_by>
-        <sys_updated_on>2026-02-03 12:12:04</sys_updated_on>
+        <sys_updated_on>2026-03-11 18:11:48</sys_updated_on>
     </sys_script_include>
 </record_update>
